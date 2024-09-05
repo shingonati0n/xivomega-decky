@@ -1,10 +1,10 @@
 {
-  "name": "Example Plugin",
-  "author": "John Doe",
-  "flags": ["debug", "_root"],
+  "name": "XIVOmega Plugin",
+  "author": "Hugo Muñoz",
+  "flags": ["debug", "root"],
   "publish": {
-    "tags": ["template", "root"],
-    "description": "Decky example plugin.",
+    "tags": ["final-fantasy-xiv", "root"],
+    "description": "Latency Mitigator for the Critically Acclaimed MMORPG Final Fantasy XIV - based on XivAlexander.",
     "image": "https://opengraph.githubassets.com/1/SteamDeckHomebrew/PluginLoader"
   }
 }
