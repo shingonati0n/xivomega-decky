@@ -2,67 +2,60 @@ import {
   ButtonItem,
   definePlugin,
   DialogButton,
-  Menu,
-  MenuItem,
+  ToggleField,
+  //Menu,
+  //MenuItem,
   Navigation,
   PanelSection,
   PanelSectionRow,
   ServerAPI,
-  showContextMenu,
+  //showContextMenu,
   staticClasses,
 } from "decky-frontend-lib";
-import { VFC } from "react";
-import { FaShip } from "react-icons/fa";
+import { VFC,useState } from "react";
+import { BiTv } from "react-icons/bi";
 
 import logo from "../assets/logo.png";
 
-// interface AddMethodArgs {
-//   left: number;
-//   right: number;
-// }
+
+interface AddMethodArgs {
+  left: number;
+  right: number;
+}
 
 const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
-  // const [result, setResult] = useState<number | undefined>();
+const [_result, setResult] = useState<number | undefined>();
 
-  // const onClick = async () => {
-  //   const result = await serverAPI.callPluginMethod<AddMethodArgs, number>(
-  //     "add",
-  //     {
-  //       left: 2,
-  //       right: 2,
-  //     }
-  //   );
-  //   if (result.success) {
-  //     setResult(result.result);
-  //   }
-  // };
+/* tslint:disable:no-unused-variable */
+const onClick = async () => {
+  const result = await serverAPI.callPluginMethod<AddMethodArgs, number>(
+    "add",
+    {
+      left: 2,
+      right: 2,
+    }
+  );
+  if (result.success) {
+    setResult(result.result);
+  }
+};
+
+onClick()
 
   return (
-    <PanelSection title="Panel Section">
+    <PanelSection title="Main Menu">
       <PanelSectionRow>
-        <ButtonItem
-          layout="below"
-          onClick={(e) =>
-            showContextMenu(
-              <Menu label="Menu" cancelText="CAAAANCEL" onCancel={() => {}}>
-                <MenuItem onSelected={() => {}}>Item #1</MenuItem>
-                <MenuItem onSelected={() => {}}>Item #2</MenuItem>
-                <MenuItem onSelected={() => {}}>Item #3</MenuItem>
-              </Menu>,
-              e.currentTarget ?? window
-            )
-          }
-        >
-          Server says yolo
-        </ButtonItem>
+        <ToggleField 
+        label="Latency Mitigation"
+        tooltip="Enable to activate latency mitigation via podman container" 
+        disabled={true} 
+        checked={false}/>
       </PanelSectionRow>
-
       <PanelSectionRow>
         <div style={{ display: "flex", justifyContent: "center" }}>
           <img src={logo} />
         </div>
       </PanelSectionRow>
-
       <PanelSectionRow>
         <ButtonItem
           layout="below"
@@ -97,7 +90,7 @@ export default definePlugin((serverApi: ServerAPI) => {
   return {
     title: <div className={staticClasses.Title}>Example Plugin</div>,
     content: <Content serverAPI={serverApi} />,
-    icon: <FaShip />,
+    icon: <BiTv />,
     onDismount() {
       serverApi.routerHook.removeRoute("/decky-plugin-test");
     },
