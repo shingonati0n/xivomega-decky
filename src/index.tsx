@@ -1,4 +1,4 @@
-import {
+ import {
   ButtonItem,
   definePlugin,
   DialogButton,
@@ -8,60 +8,40 @@ import {
   Navigation,
   PanelSection,
   PanelSectionRow,
-  ServerAPI,
+  //ServerAPI,
   //showContextMenu,
+
   staticClasses,
-} from "decky-frontend-lib";
-import { VFC,useState } from "react";
+} from "@decky/ui";
+import { VFC, useState } from "react";
 import { BiTv } from "react-icons/bi";
 
-import logo from "../assets/logo.png";
+//import logo from "../assets/logo.png";
+import { routerHook } from "@decky/api";
 
-
-interface AddMethodArgs {
-  left: number;
-  right: number;
-}
-
-const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
-const [_result, setResult] = useState<number | undefined>();
-
-/* tslint:disable:no-unused-variable */
-const onClick = async () => {
-  const result = await serverAPI.callPluginMethod<AddMethodArgs, number>(
-    "add",
-    {
-      left: 2,
-      right: 2,
-    }
-  );
-  if (result.success) {
-    setResult(result.result);
-  }
+function Content() {
+const [_result, setResult] = useState<string| undefined>();
+const onChange = async () => {
+  const result = "bla";
+  setResult(result);
 };
-
-onClick()
-
   return (
     <PanelSection title="Main Menu">
       <PanelSectionRow>
         <ToggleField 
         label="Latency Mitigation"
         tooltip="Enable to activate latency mitigation via podman container" 
-        disabled={true} 
-        checked={false}/>
-      </PanelSectionRow>
-      <PanelSectionRow>
-        <div style={{ display: "flex", justifyContent: "center" }}>
-          <img src={logo} />
-        </div>
+        highlightOnFocus={true}
+        disabled={false} 
+        checked={true}
+        onChange={() => {onChange()}}/>
       </PanelSectionRow>
       <PanelSectionRow>
         <ButtonItem
           layout="below"
           onClick={() => {
-            Navigation.CloseSideMenus();
             Navigation.Navigate("/decky-plugin-test");
+            Navigation.CloseSideMenus();
           }}
         >
           Router
@@ -82,17 +62,18 @@ const DeckyPluginRouterTest: VFC = () => {
   );
 };
 
-export default definePlugin((serverApi: ServerAPI) => {
-  serverApi.routerHook.addRoute("/decky-plugin-test", DeckyPluginRouterTest, {
+export default definePlugin(() => {
+  routerHook.addRoute("/decky-plugin-test", DeckyPluginRouterTest, {
     exact: true,
   });
 
   return {
-    title: <div className={staticClasses.Title}>Example Plugin</div>,
-    content: <Content serverAPI={serverApi} />,
+    title: <div className={staticClasses.Title}>APIv2 Plugin</div>,
+    content: <Content />,
     icon: <BiTv />,
     onDismount() {
-      serverApi.routerHook.removeRoute("/decky-plugin-test");
+      //serverApi.routerHook.removeRoute("/decky-plugin-test");
+      console.log("Unloading");
     },
   };
 });

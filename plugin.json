@@ -2,6 +2,7 @@
   "name": "XIVOmega Plugin",
   "author": "Hugo Muñoz",
   "flags": ["debug", "root"],
+  "api_version": 1,
   "publish": {
     "tags": ["final-fantasy-xiv", "root"],
     "description": "Latency Mitigator for the Critically Acclaimed MMORPG Final Fantasy XIV - based on XivAlexander.",

@@ -1,53 +1,50 @@
 {
-  "name": "xivomega-decky",
-  "version": "0.0.1",
-  "description": "Latency Mitigator for FFXIV",
-  "scripts": {
-    "build": "shx rm -rf dist && rollup -c",
-    "watch": "rollup -c -w",
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/shingonati0n/decky-plugin-xivomega.git"
-  },
-  "keywords": [
+    "name": "xivomega-decky",
+    "version": "0.0.1",
+    "description": "Latency Mitigator for FFXIV",
+    "type": "module",
+    "scripts": {
+      "build": "rollup -c",
+      "watch": "rollup -c -w",
+      "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/shingonati0n/decky-plugin-xivomega.git"
+    },
+    "keywords": [
     "decky",
     "plugin",
     "ffxiv",
     "steam-deck",
     "deck"
-  ],
-  "author": "Hugo Munoz <hsmunozc@gmail.com>",
-  "license": "BSD-3-Clause",
-  "bugs": {
-    "url": "https://github.com/shingonati0n/decky-plugin-xivomega/issues"
-  },
-  "homepage": "https://github.com/shingonati0n/decky-plugin-xivomega#readme",
-  "devDependencies": {
-    "@rollup/plugin-commonjs": "^21.1.0",
-    "@rollup/plugin-json": "^4.1.0",
-    "@rollup/plugin-node-resolve": "^13.3.0",
-    "@rollup/plugin-replace": "^4.0.0",
-    "@rollup/plugin-typescript": "^8.3.3",
-    "@types/react": "16.14.0",
-    "@types/webpack": "^5.28.0",
-    "rollup": "^2.77.1",
-    "rollup-plugin-import-assets": "^1.1.1",
-    "shx": "^0.3.4",
-    "tslib": "^2.4.0",
-    "typescript": "^4.7.4"
-  },
-  "dependencies": {
-    "decky-frontend-lib": "^3.25.0",
-    "react-icons": "^4.4.0"
-  },
-  "pnpm": {
-    "peerDependencyRules": {
-      "ignoreMissing": [
-        "react",
-        "react-dom"
-      ]
+    ],
+    "author": "Hugo Munoz <hsmunozc@gmail.com>",
+    "license": "BSD-3-Clause",
+    "bugs": {
+        "url": "https://github.com/shingonati0n/decky-plugin-xivomega/issues"
+    },
+    "homepage": "https://github.com/shingonati0n/decky-plugin-xivomega#readme",
+    "devDependencies": {
+      "@decky/rollup": "^1.0.0",
+      "@types/react": "18.3.3",
+      "@types/react-dom": "18.3.0",
+      "@types/webpack": "^5.28.5",
+      "rollup": "^4.18.0",
+      "typescript": "^5.5.3"
+    },
+    "dependencies": {
+      "@decky/api": "^1.0.5",
+      "@decky/ui": "^4.0.3",
+      "react-icons": "^5.2.1",
+      "tslib": "^2.6.3"
+    },
+    "pnpm": {
+      "peerDependencyRules": {
+        "ignoreMissing": [
+          "react",
+          "react-dom"
+        ]
+      }
     }
   }
-}
