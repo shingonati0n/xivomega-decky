@@ -1,40 +1,58 @@
  import {
   ButtonItem,
-  definePlugin,
   DialogButton,
   ToggleField,
-  //Menu,
-  //MenuItem,
   Navigation,
   PanelSection,
   PanelSectionRow,
-  //ServerAPI,
-  //showContextMenu,
-
   staticClasses,
 } from "@decky/ui";
-import { VFC, useState } from "react";
-import { BiTv } from "react-icons/bi";
 
-//import logo from "../assets/logo.png";
-import { routerHook } from "@decky/api";
+import { 
+  FunctionComponent, 
+  useState,
+  useEffect 
+} from "react";
+
+import { 
+  BiTv 
+} from "react-icons/bi";
+
+import { 
+  call,
+  routerHook, 
+  definePlugin 
+} from "@decky/api";
 
 function Content() {
-const [_result, setResult] = useState<string| undefined>();
-const onChange = async () => {
-  const result = "bla";
-  setResult(result);
-};
+
+const [enabled, setEnabled] = useState<boolean>(false);
+//onClick behaviour
+const onClick = async (e:boolean) => {
+    call('set_enable', { enabled: e });
+}
+
+const initState = async() => {
+  const getIsEnabledResponse:boolean= await call('is_enabled', {});
+  setEnabled(getIsEnabledResponse as boolean);
+}
+
+useEffect(() => {
+  initState();
+},[]);
   return (
     <PanelSection title="Main Menu">
       <PanelSectionRow>
         <ToggleField 
         label="Latency Mitigation"
-        tooltip="Enable to activate latency mitigation via podman container" 
-        highlightOnFocus={true}
-        disabled={false} 
-        checked={true}
-        onChange={() => {onChange()}}/>
+        checked={enabled}
+        onChange={(e) => { setEnabled(e); onClick(e)}}/>
+      </PanelSectionRow>
+      <PanelSectionRow>
+        <div>Enable to activate latency mitigation via podman container.</div>
+      </PanelSectionRow>
+      <PanelSectionRow>
+        <div>Put True and False here</div>
       </PanelSectionRow>
       <PanelSectionRow>
         <ButtonItem
@@ -51,7 +69,7 @@ const onChange = async () => {
   );
 };
 
-const DeckyPluginRouterTest: VFC = () => {
+const DeckyPluginRouterTest: FunctionComponent = () => {
   return (
     <div style={{ marginTop: "50px", color: "white" }}>
       Hello World!

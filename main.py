@@ -1,15 +1,46 @@
 import os
+import subprocess
 
 # The decky plugin module is located at decky-loader/plugin
 # For easy intellisense checkout the decky-loader code one directory up
 # or add the `decky-loader/plugin` path to `python.analysis.extraPaths` in `.vscode/settings.json`
-import decky_plugin
+import decky
 
+logger = decky_plugin.logger
 
 class Plugin:
+    _enabled = False
+
+    async def is_enabled(self):
+        return Plugin._enabled
+
+    async def set_enabled(self, enabled):
+        logger.info(enabled)
+        logger.info(type(enabled)) 
+        if Plugin._enabled == True and enabled == False:
+            ret = subprocess.run(shlex.split("podman stop xivtest"))
+        Plugin._enabled = enabled
+
     # A normal method. It can be called from JavaScript using call_plugin_function("method_1", argument1, argument2)
-    async def add(self, left, right):
-        return left + right
+    async def podmanToggleTest(self,togState):
+        rc = 0
+        if(togState==True):
+            try:
+                hworld = subprocess.run(shlex.split("podman start xivtest"),check=True,capture_output=True)
+                if hworld.returncode == 0:
+				    #print("XIVOmega says - Hello World")
+                    rc = 1
+            except subprocess.CalledProcessError as e:
+                rc = -4
+        else:
+            try:
+                hworld = subprocess.run(shlex.split("podman stop xivtest"),check=True,capture_output=True)
+                if hworld.returncode == 0:
+			        #print("XIVOmega says - Hello World")
+                    rc = 2
+            except subprocess.CalledProcessError as e:
+                rc = -5
+        return togState
 
     # Asyncio-compatible long-running code, executed in a task when the plugin is loaded
     async def _main(self):
