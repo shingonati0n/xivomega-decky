@@ -1,97 +1,75 @@
- import {
-  ButtonItem,
-  DialogButton,
-  ToggleField,
-  Navigation,
-  PanelSection,
-  PanelSectionRow,
-  staticClasses,
+import {
+	PanelSection,
+	PanelSectionRow,
+	ToggleField,
+	staticClasses,
 } from "@decky/ui";
 
-import { 
-  FunctionComponent, 
-  useState,
-  useEffect 
-} from "react";
+import {
+//	callable,
+	call,
+	definePlugin,
+} from "@decky/api"
 
-import { 
-  BiTv 
-} from "react-icons/bi";
+import { useState, useEffect } from "react";
+import { BiTv } from "react-icons/bi";
 
-import { 
-  call,
-  routerHook, 
-  definePlugin 
-} from "@decky/api";
+const onKill = async() => {call('stop_status')}
 
 function Content() {
+	const [checkd, setCheckd] = useState<boolean>(false);
 
-const [enabled, setEnabled] = useState<boolean>(false);
-//onClick behaviour
-const onClick = async (e:boolean) => {
-    call('set_enable', { enabled: e });
-}
+	const onClick = async(e:boolean) => {
+		call("toggle_status",{ checkd: e });
+	};
 
-const initState = async() => {
-  const getIsEnabledResponse:boolean= await call('is_enabled', {});
-  setEnabled(getIsEnabledResponse as boolean);
-}
+	const initState = async () => {
+		const getIsEnabledResponse = await call<[],boolean>("curr_status");
+		setCheckd(getIsEnabledResponse);
+	}
 
-useEffect(() => {
-  initState();
-},[]);
-  return (
-    <PanelSection title="Main Menu">
-      <PanelSectionRow>
-        <ToggleField 
-        label="Latency Mitigation"
-        checked={enabled}
-        onChange={(e) => { setEnabled(e); onClick(e)}}/>
-      </PanelSectionRow>
-      <PanelSectionRow>
-        <div>Enable to activate latency mitigation via podman container.</div>
-      </PanelSectionRow>
-      <PanelSectionRow>
-        <div>Put True and False here</div>
-      </PanelSectionRow>
-      <PanelSectionRow>
-        <ButtonItem
-          layout="below"
-          onClick={() => {
-            Navigation.Navigate("/decky-plugin-test");
-            Navigation.CloseSideMenus();
-          }}
-        >
-          Router
-        </ButtonItem>
-      </PanelSectionRow>
-    </PanelSection>
-  );
-};
-
-const DeckyPluginRouterTest: FunctionComponent = () => {
-  return (
-    <div style={{ marginTop: "50px", color: "white" }}>
-      Hello World!
-      <DialogButton onClick={() => Navigation.NavigateToLibraryTab()}>
-        Go to Library
-      </DialogButton>
-    </div>
-  );
+	useEffect(() => {
+			initState();
+	}, []);
+	return (
+		<PanelSection>
+			<PanelSectionRow>
+			<ToggleField
+					label="Enable Mitigation"
+					checked={checkd}
+					onChange={ async(e) => { setCheckd(e); onClick(e); }}
+			/>
+			</PanelSectionRow>
+			<PanelSectionRow>
+			{checkd && (
+				<div>
+					<strong>
+						<em>Mitigator Enabled</em>
+					</strong>
+				
+				</div>
+			)}
+			{!checkd && (
+				<div>
+					<strong>
+						<em>False False</em>
+					</strong>
+				
+				</div>
+			)}
+			</PanelSectionRow>
+		</PanelSection>
+	);
 };
 
 export default definePlugin(() => {
-  routerHook.addRoute("/decky-plugin-test", DeckyPluginRouterTest, {
-    exact: true,
-  });
-
-  return {
-    title: <div className={staticClasses.Title}>APIv2 Plugin</div>,
-    content: <Content />,
-    icon: <BiTv />,
-    onDismount() {
-      //serverApi.routerHook.removeRoute("/decky-plugin-test");
-      console.log("Unloading");
-    },
-  };
+	return {
+		name: "XivOmega",
+		title: <div className={staticClasses.Title}>XivOmega</div>,
+		content: <Content />,
+		icon: <BiTv />,
+		onDismount() {
+			onKill();
+		},
+	};
 });
