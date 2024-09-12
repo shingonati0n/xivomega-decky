@@ -25,7 +25,7 @@ class WorkerClass:
 		  --sysctl net.ipv4.conf.all.route_localnet=1 \
 		  --net=podman \
 		  --cap-add=NET_RAW,NET_ADMIN \
-		  -ti quay.io/shingonati0n/xivomega:latest /bin/sh"""	
+		  -i quay.io/shingonati0n/xivomega:latest /bin/sh"""
 		try:
 			xivomega = subprocess.run(shlex.split(omegapod),check=True,capture_output=True)
 			if xivomega.returncode == 0:
@@ -242,7 +242,7 @@ class WorkerClass:
 	@staticmethod
 	def testStop():
 		try:
-			tworld = subprocess.run(shlex.split("podman stop xivtest"),check=True,capture_output=True)
+			tworld = subprocess.run(shlex.split("podman kill --signal INT xivtest"),check=True,capture_output=True)
 			if tworld.returncode == 0:
 				decky.logger.info("podman stopped successfully")
 		except subprocess.CalledProcessError as e:

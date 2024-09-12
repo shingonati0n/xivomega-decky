@@ -73,8 +73,24 @@ class Plugin:
 			omegaWorker.WorkerClass().testStop()
 		Plugin._enabled = check['checkd']
 
-	#mitig
-	
+	#mitigator method
+	async def mitigate(self):
+		await asyncio.sleep(5)
+		decky.logger.info("Starting main program")
+		decky.logger.info(thisusr)
+		decky.logger.info(thisusrhome)
+		omegaBeetle = omegaWorker.WorkerClass()
+		#omega = f"podman exec -i xivomega /home/omega_alpha.sh"
+		omega = f"podman exec -i xivtest ping 192.168.100.82"
+		try:
+			xivomega = Popen(shlex.split(omega), stdout=subprocess.PIPE, universal_newlines=True)
+			for ln in xivomega.stdout:
+				decky.logger.info(ln,end='')
+		except Exception:
+			decky.logger.info("failure on process")
+		await asyncio.sleep(0.5)
+
+
 	#function for onKill
 	async def stop_status(self):
 		Plugin._enabled = False
@@ -82,7 +98,6 @@ class Plugin:
 
 	# Asyncio-compatible long-running code, executed in a task when the plugin is loaded
 	async def _main(self):
-		omegaBeetle = omegaWorker.WorkerClass()
 		# try:
 		# 	xivomega = subprocess.Popen(str(Path(decky.DECKY_PLUGIN_DIR) / "omega_create.sh"))
 		# 	if xivomega.returncode == 0:
@@ -97,15 +112,17 @@ class Plugin:
 		# Copy container storage into home folder under xivomega_cont // add select path for this // NO 
 		# Modify /etc/containers/storage.conf  // NO
 		# create container // NO
-		# create ipvlan (host ad container)
+		# create ipvlan (host and container)
 		# connect to ipvlan // NO 
 		# set iptables // NO
 		# ping game // NO 
 		# run mitigator // YES -- this has to be inside create_task -- 
-		decky.logger.info("Starting main program")
-		decky.logger.info(thisusr)
-		decky.logger.info(thisusrhome)
-		omegaWorker.WorkerClass().testStart()
+		try:
+			loop = asyncio.get_event_loop()
+			Plugin._runner_task = loop.create_task(Plugin.mitigate(self))
+			decky.looger.info("Mitigation initiated")
+		except Exception:
+			decky.logger.exception("main")
 		#omegaBeetle.testStart()
 		#omegaBeetle.podmanInfo()
 
