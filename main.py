@@ -70,8 +70,10 @@ class Plugin:
 		if Plugin._enabled == True and check['checkd'] == False:
 			decky.logger.info("Switched via toggle_status")
 			#omegaBeetle.SelfDestructProtocol()
-			omegaBeetle.testStop()
+			omegaWorker.WorkerClass().testStop()
 		Plugin._enabled = check['checkd']
+
+	#mitig
 	
 	#function for onKill
 	async def stop_status(self):
@@ -89,16 +91,27 @@ class Plugin:
 		# 	pass
 		# 	decky.logger.info(e.stdout.decode())
 		# Omega Code will go here 
-		# ToDo: 
-		# Copy container storage into home folder under xivomega_cont // add select path for this
-		# Modify /etc/containers/storage.conf 
-		# create ipvlan and podman ipvlan network
-		# create container 
+		# BIG FYI - Decky uses /usr/bin/podman!!! have this in mind in case something needs fixing or anything
+		# ToDo // does it run forever??: 
+		#Pre process when launchng plugin
+		# Copy container storage into home folder under xivomega_cont // add select path for this // NO 
+		# Modify /etc/containers/storage.conf  // NO
+		# create container // NO
+		# create ipvlan (host ad container)
+		# connect to ipvlan // NO 
+		# set iptables // NO
+		# ping game // NO 
+		# run mitigator // YES -- this has to be inside create_task -- 
 		decky.logger.info("Starting main program")
 		decky.logger.info(thisusr)
 		decky.logger.info(thisusrhome)
-		omegaBeetle.testStart()
-		omegaBeetle.podmanInfo()
+		omegaWorker.WorkerClass().testStart()
+		#omegaBeetle.testStart()
+		#omegaBeetle.podmanInfo()
+
+	#need a way to stop the mitigator and virtually send a ctrl-C
+	#restart mitigator when toggled - not the whole preroutine though
+	
 
 	# Enable services
 	# async def enable(self):

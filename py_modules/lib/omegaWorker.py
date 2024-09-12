@@ -217,18 +217,21 @@ class WorkerClass:
 		if (ccnt > 0):
 			decky.logger.info("Dangling elements from previous play session detected. CleanUp Protocol Activated and Completed")
 #testMethods - these will be static
-	def testStart(self):
+	@staticmethod
+	def testStart():
 		try:
 			tworld = subprocess.run(shlex.split("podman start xivtest"),check=True,capture_output=True)
 			if tworld.returncode == 0:
 				decky.logger.info("podman started successfully")
+				decky.logger.info(tworld.stdout.decode())
 		except subprocess.CalledProcessError as e:
 			pass
-			decky.logger.info(e.stderr.decode())			
-	def podmanInfo(self):
+			decky.logger.info(e.stderr.decode())
+	@staticmethod					
+	def podmanInfo():
 		try:
 			pworld = subprocess.run(shlex.split("podman container ls -a"),check=True,capture_output=True)
-			nworld = subprocess.run(shlex.split("podman network ls"),check=True,capture_output=True)
+			nworld = subprocess.run(shlex.split("podman inspect xivtest"),check=True,capture_output=True)
 			if pworld.returncode == 0:
 				decky.logger.info(pworld.stdout.decode())
 			if nworld.returncode == 0:
@@ -236,8 +239,8 @@ class WorkerClass:
 		except subprocess.CalledProcessError as e:
 			pass
 			decky.logger.info(e.stderr.decode())
-
-	def testStop(self):
+	@staticmethod
+	def testStop():
 		try:
 			tworld = subprocess.run(shlex.split("podman stop xivtest"),check=True,capture_output=True)
 			if tworld.returncode == 0:
@@ -245,13 +248,6 @@ class WorkerClass:
 		except subprocess.CalledProcessError as e:
 			pass
 			decky.logger.info(e.stderr.decode())
-		# try:
-		# 	tworld = subprocess.run(shlex.split("podman rm xivomega"),check=True,capture_output=True)
-		# 	if tworld.returncode == 0:
-		# 		decky.logger.info("podman removed successfully")
-		# except subprocess.CalledProcessError as e:
-		# 	pass
-		# 	decky.logger.info(e.stderr.decode())
 
 class RootRequiredError(RuntimeError):
 	pass

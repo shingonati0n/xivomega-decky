@@ -7,4 +7,4 @@ podman create \
 --sysctl net.ipv4.conf.all.route_localnet=1 \
 --net=podman \
 --cap-add=NET_RAW,NET_ADMIN \
--ti quay.io/shingonati0n/xivomega:latest /bin/sh
+-i quay.io/shingonati0n/xivomega:latest /bin/sh
