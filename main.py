@@ -13,7 +13,7 @@ import shlex
 import time 
 import io
 import configparser
-from subprocess import Popen, PIPE, CalledProcessError
+from subprocess import Popen, PIPE, STDOUT, CalledProcessError
 from getpass import getpass
 
 #append py_modules to PYTHONPATH
@@ -65,8 +65,8 @@ class Plugin:
 
 	#switch toggle status
 	async def toggle_status(self, check):
-		decky.logger.info(check)
-		decky.logger.info(type(check))
+		decky.logger.info(check['checkd'])
+		decky.logger.info(type(check['checkd']))
 		if Plugin._enabled == True and check['checkd'] == False:
 			decky.logger.info("Switched via toggle_status")
 			#omegaBeetle.SelfDestructProtocol()
@@ -80,14 +80,18 @@ class Plugin:
 		decky.logger.info(thisusr)
 		decky.logger.info(thisusrhome)
 		omegaBeetle = omegaWorker.WorkerClass()
+		omegaWorker.WorkerClass().testStart()
+		if Plugin._enabled:
 		#omega = f"podman exec -i xivomega /home/omega_alpha.sh"
-		omega = f"podman exec -i xivtest ping 192.168.100.82"
-		try:
-			xivomega = Popen(shlex.split(omega), stdout=subprocess.PIPE, universal_newlines=True)
-			for ln in xivomega.stdout:
-				decky.logger.info(ln,end='')
-		except Exception:
-			decky.logger.info("failure on process")
+			omega = f"podman exec xivtest ping 192.168.100.82"
+			try:
+				xivomega = Popen(shlex.split(omega), stdin=PIPE, stdout=PIPE, stderr=STDOUT)
+				for ln in xivomega.stdout:
+					decky.logger.info(ln.decode())
+					await asyncio.sleep(0)
+			except Exception:
+				decky.logger.info("failure on process")
+				decky.logger.info(xivomega.stderr.decode())
 		await asyncio.sleep(0.5)
 
 
@@ -120,7 +124,7 @@ class Plugin:
 		try:
 			loop = asyncio.get_event_loop()
 			Plugin._runner_task = loop.create_task(Plugin.mitigate(self))
-			decky.looger.info("Mitigation initiated")
+			decky.logger.info("Mitigation initiated")
 		except Exception:
 			decky.logger.exception("main")
 		#omegaBeetle.testStart()

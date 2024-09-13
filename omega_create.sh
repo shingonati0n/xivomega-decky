@@ -1,8 +1,8 @@
 #!/bin/bash
 podman create \
 --replace \
---name=xivomega \
---ip=10.88.0.7 \
+--name=xivtest \
+--ip=10.88.0.3 \
 --sysctl net.ipv4.ip_forward=1 \
 --sysctl net.ipv4.conf.all.route_localnet=1 \
 --net=podman \
