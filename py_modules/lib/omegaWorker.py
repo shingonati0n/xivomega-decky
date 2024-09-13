@@ -244,7 +244,26 @@ class WorkerClass:
 		try:
 			tworld = subprocess.run(shlex.split("podman kill --signal INT xivtest"),check=True,capture_output=True)
 			if tworld.returncode == 0:
+				decky.logger.info("podman execution halted")
+		except subprocess.CalledProcessError as e:
+			pass
+			decky.logger.info(e.stderr.decode())
+		try:
+			sworld = subprocess.run(shlex.split("podman stop xivtest"),check=True,capture_output=True)
+			if sworld.returncode == 0:
 				decky.logger.info("podman stopped successfully")
+		except subprocess.CalledProcessError as e:
+			pass
+			decky.logger.info(e.stderr.decode())
+	@staticmethod
+	def isRunning()->bool:
+		try:
+			rcheck = subprocess.run(shlex.split(r"podman ps -f name=xivtest --format {{.Status}}"),check=True,capture_output=True)
+			decky.logger.info(rcheck.stdout.decode())
+			if str(rcheck.stdout.decode()[:2]).lower() == "up":
+				return True
+			else:
+				return False
 		except subprocess.CalledProcessError as e:
 			pass
 			decky.logger.info(e.stderr.decode())

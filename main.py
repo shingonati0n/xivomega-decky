@@ -76,23 +76,28 @@ class Plugin:
 	#mitigator method
 	async def mitigate(self):
 		await asyncio.sleep(5)
-		decky.logger.info("Starting main program")
-		decky.logger.info(thisusr)
-		decky.logger.info(thisusrhome)
-		omegaBeetle = omegaWorker.WorkerClass()
-		omegaWorker.WorkerClass().testStart()
-		if Plugin._enabled:
-		#omega = f"podman exec -i xivomega /home/omega_alpha.sh"
-			omega = f"podman exec xivtest ping 192.168.100.82"
+		while True:
 			try:
-				xivomega = Popen(shlex.split(omega), stdin=PIPE, stdout=PIPE, stderr=STDOUT)
-				for ln in xivomega.stdout:
-					decky.logger.info(ln.decode())
-					await asyncio.sleep(0)
+				if Plugin._enabled:
+					decky.logger.info("Plugin is enabled")
+					#check if running and if not then start
+					isRunning = omegaWorker.WorkerClass.isRunning()
+					decky.logger.info(isRunning) 
+					if isRunning == False:
+						decky.logger.info("Activation signal received, starting it")
+						omegaWorker.WorkerClass.testStart()
+					#omega = f"podman exec -i xivomega /home/omega_alpha.sh"
+					omega = f"podman exec xivtest ping 192.168.100.82"
+					xivomega = Popen(shlex.split(omega), stdin=PIPE, stdout=PIPE, stderr=STDOUT)
+					for ln in xivomega.stdout:
+						decky.logger.info(ln)
+						await asyncio.sleep(0.5)
+				else:
+					decky.logger.info("Waiting for activation")
 			except Exception:
 				decky.logger.info("failure on process")
 				decky.logger.info(xivomega.stderr.decode())
-		await asyncio.sleep(0.5)
+			await asyncio.sleep(0.5)
 
 
 	#function for onKill
@@ -102,13 +107,6 @@ class Plugin:
 
 	# Asyncio-compatible long-running code, executed in a task when the plugin is loaded
 	async def _main(self):
-		# try:
-		# 	xivomega = subprocess.Popen(str(Path(decky.DECKY_PLUGIN_DIR) / "omega_create.sh"))
-		# 	if xivomega.returncode == 0:
-		# 		decky.logger.info("podman container created successfully")
-		# except subprocess.CalledProcessError as e:
-		# 	pass
-		# 	decky.logger.info(e.stdout.decode())
 		# Omega Code will go here 
 		# BIG FYI - Decky uses /usr/bin/podman!!! have this in mind in case something needs fixing or anything
 		# ToDo // does it run forever??: 
@@ -121,6 +119,12 @@ class Plugin:
 		# set iptables // NO
 		# ping game // NO 
 		# run mitigator // YES -- this has to be inside create_task -- 
+		decky.logger.info("Starting main program")
+		decky.logger.info(thisusr)
+		decky.logger.info(thisusrhome)
+		omegaBeetle = omegaWorker.WorkerClass()
+		omegaWorker.WorkerClass().testStart()
+		#main loop - it works!!
 		try:
 			loop = asyncio.get_event_loop()
 			Plugin._runner_task = loop.create_task(Plugin.mitigate(self))
