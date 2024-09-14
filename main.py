@@ -24,6 +24,12 @@ from lib import omegaWorker
 thisusr = decky.USER
 thisusrhome = decky.DECKY_USER_HOME
 
+class ConnectionFailedError(Exception):
+	pass
+
+class InvalidIPException(Exception):
+	pass
+
 #static stuff
 roadsto14 = [
 	"124.150.157.0/24",
@@ -53,6 +59,33 @@ def is_valid_ipv4_address(address):
 		return False
 	return True
 
+def establishConnection(self)->int:
+	ctx = 1
+	decky.loader.info("Establishing network connection...")
+	while(ctx > 0):
+		try:
+			dice = subprocess.run(shlex.split("podman exec xivomega ping 204.2.29.7 -c 5"),check=True,capture_output=True)
+			if dice.returncode == 0:
+				decky.loader.info("Network Established")
+				ctx = 0
+			else:
+				decky.loader.info("Retrying Connection..")
+				ctx = ctx + 1
+				omegaWorker.WorkerClass().ReconnectProtocol()
+				omegaWorker.WorkerClass().ClearNetavarkRules()
+				omegaWorker.WorkerClass().SetRoutes(roadsto14)
+				if(ctx > 5):
+					return ctx
+		except subprocess.CalledProcessError as e:
+			decky.loader.info("Retrying Connection...")
+			ctx = ctx + 1
+			omegaWorker.WorkerClass().ReconnectProtocol()
+			omegaWorker.WorkerClass().ClearNetavarkRules()
+			omegaWorker.WorkerClass().SetRoutes(roadsto14)
+			if(ctx > 5):
+				return ctx
+	return ctx
+
 #Plugin code
 class Plugin:
 
@@ -69,8 +102,7 @@ class Plugin:
 		decky.logger.info(type(check['checkd']))
 		if Plugin._enabled == True and check['checkd'] == False:
 			decky.logger.info("Switched via toggle_status")
-			#omegaBeetle.SelfDestructProtocol()
-			omegaWorker.WorkerClass().testStop()
+			omegaWorker.WorkerClass().stopPodman()
 		Plugin._enabled = check['checkd']
 
 	#mitigator method
@@ -85,18 +117,26 @@ class Plugin:
 					decky.logger.info(isRunning) 
 					if isRunning == False:
 						decky.logger.info("Activation signal received, starting it")
-						omegaWorker.WorkerClass.testStart()
-					#omega = f"podman exec -i xivomega /home/omega_alpha.sh"
-					omega = f"podman exec xivtest ping 192.168.100.82"
-					xivomega = Popen(shlex.split(omega), stdin=PIPE, stdout=PIPE, stderr=STDOUT)
-					for ln in xivomega.stdout:
-						decky.logger.info(ln)
-						await asyncio.sleep(0.5)
-				else:
-					decky.logger.info("Waiting for activation")
+						omegaWorker.WorkerClass.startPodman()
+					else: 
+						decky.logger.info("Container started - establishing connection now")
+					conn = Plugin.establishConnection(self)
+					decky.logger.info(str(conn))
+					if conn == 0:
+						omega = f"podman exec -i xivomega /home/omega_alpha.sh"
+						xivomega = Popen(shlex.split(omega), stdin=PIPE, stdout=PIPE, stderr=STDOUT)
+						for ln in xivomega.stdout:
+							decky.logger.info(ln)
+							await asyncio.sleep(0.5)
+					else:
+						raise ConnectionFailedError
+						pass
+				#else:
+					#decky.logger.info("Waiting for activation")
 			except Exception:
 				decky.logger.info("failure on process")
-				decky.logger.info(xivomega.stderr.decode())
+				decky.logger.info(xivomega.stderr)
+				pass
 			await asyncio.sleep(0.5)
 
 
@@ -109,21 +149,32 @@ class Plugin:
 	async def _main(self):
 		# Omega Code will go here 
 		# BIG FYI - Decky uses /usr/bin/podman!!! have this in mind in case something needs fixing or anything
-		# ToDo // does it run forever??: 
-		#Pre process when launchng plugin
-		# Copy container storage into home folder under xivomega_cont // add select path for this // NO 
-		# Modify /etc/containers/storage.conf  // NO
-		# create container // NO
-		# create ipvlan (host and container)
-		# connect to ipvlan // NO 
-		# set iptables // NO
-		# ping game // NO 
-		# run mitigator // YES -- this has to be inside create_task -- 
+		#network preparations
+		#get IP address with cidr from wlan0 only - eth0 en ens* not supported yet
+		ipv4 = os.popen('ip addr show wlan0').read().split("inet ")[1].split(" brd")[0] 
+		ipv4n, netb = ipv4.split('/')
+		subn = ipaddress.ip_network(cidr_to_netmask(ipv4)[0]+'/'+cidr_to_netmask(ipv4)[1], strict=False)
+		sdgway = '.'.join(ipv4n.split('.')[:3]) + ".1"
+		sdsubn = str(subn.network_address) + "/" + netb
+		#get first and last ips from current network 
+		#fip is the gateway
+		#vip is the ipvlan host adapter - penultimate IP from network
+		#lip is the ipvlan from podman - last ip address
+		nt = ipaddress.IPv4Network(sdsubn)
+		fip = str(nt[1])
+		vip = str(nt[-4])
+		lip = str(nt[-3])
+		brd = str(nt.broadcast_address)
 		decky.logger.info("Starting main program")
 		decky.logger.info(thisusr)
 		decky.logger.info(thisusrhome)
-		omegaBeetle = omegaWorker.WorkerClass()
-		omegaWorker.WorkerClass().testStart()
+		decky.logger.info(f"Host IPVlan IP: {vip}")
+		decky.logger.info(f"Podman IPVlan IP: {lip}")
+		decky.logger.info(f"Gateway IP: {fip}")
+		#create network and container
+		omegaWorker.WorkerClass().createIpVlanC(sdsubn,sdgway)
+		omegaWorker.WorkerClass().SelfCreateProtocol(lip)
+		#omegaWorker.WorkerClass().connectIpVlanC(lip)
 		#main loop - it works!!
 		try:
 			loop = asyncio.get_event_loop()
@@ -131,12 +182,8 @@ class Plugin:
 			decky.logger.info("Mitigation initiated")
 		except Exception:
 			decky.logger.exception("main")
-		#omegaBeetle.testStart()
-		#omegaBeetle.podmanInfo()
-
-	#need a way to stop the mitigator and virtually send a ctrl-C
-	#restart mitigator when toggled - not the whole preroutine though
-	
+		except ConnectionFailedError:
+			decky.logger.info("Connection Failed")
 
 	# Enable services
 	# async def enable(self):
@@ -150,6 +197,7 @@ class Plugin:
 	# completely removed
 	async def _unload(self):
 		Plugin.stop_status(self)
+		omegaWorker.WorkerClass.SelfDestructProtocol(roadsto14)
 		decky.logger.info("Goodnight World!")
 		pass
 
