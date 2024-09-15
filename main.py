@@ -133,18 +133,28 @@ class Plugin:
 					decky.logger.info(ctx)
 					if ctx == 0:
 						omega = f"podman exec -i xivomega /home/omega_alpha.sh"
-						xivomega = Popen(shlex.split(omega), stdin=PIPE, stdout=PIPE, stderr=STDOUT)
-						for ln in xivomega.stdout:
-							decky.logger.info(ln)
-							await asyncio.sleep(0.5)
+						#xivomega = Popen(shlex.split(omega), stdin=PIPE, stdout=PIPE, stderr=STDOUT, text=True)
+						xivomega = await asyncio.create_subprocess_exec(*shlex.split(omega), stdin=PIPE, stdout=PIPE, stderr=STDOUT)
+						# for ln in xivomega.stdout:
+						# 	decky.logger.info(ln)
+						# 	await asyncio.sleep(0.5)
+						while True:
+							try:
+								Plugin._enabled = True
+								ln = await asyncio.wait_for(xivomega.stdout.readline(),1)
+								if ln:
+									decky.logger.info(ln.decode('utf-8').strip())
+									await asyncio.sleep(0.5)
+							except asyncio.TimeoutError:
+								await asyncio.sleep(0.5)
+								pass			
 					else:
 						raise ConnectionFailedError
 						pass
 				# else:
 				# 	decky.logger.info("Waiting for activation")
 			except Exception as e:
-				decky.logger.info("failure on process")
-				decky.logger.info(pdb.post_mortem())
+				decky.logger.info("Failure on process")
 				decky.logger.info(traceback.format_exc())
 				pass
 			await asyncio.sleep(0.5)
