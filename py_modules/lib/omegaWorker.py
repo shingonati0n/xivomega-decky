@@ -10,7 +10,7 @@ import ipaddress
 import struct
 import shlex
 import io
-from subprocess import Popen, PIPE, CalledProcessError
+from subprocess import Popen, PIPE, CalledProcessError, STDOUT
 
 class WorkerClass:
 	@staticmethod
@@ -81,12 +81,25 @@ class WorkerClass:
 	def SetRoutes(rt14):
 		for r in rt14:
 			way = f"ip route add {r} via 10.88.0.7"
-			nav = subprocess.run(shlex.split(way),check=True,capture_output=True)
 			try:
-		   		if nav.returncode==0:
+				nav = subprocess.run(shlex.split(way),check=True,capture_output=True)
+				if nav.returncode==0:
 		   			decky.logger.info(f"route to {r} added")
 			except subprocess.CalledProcessError as e:
 				decky.logger.info(e.stderr.decode())
+				pass
+
+	@staticmethod
+	def SetRoutesPopen(rt14):
+		for r in rt14:
+			way = f"ip route add {r} via 10.88.0.7"
+			try:
+				nav = Popen(shlex.split(way),stdin=PIPE,stdout=PIPE,stderr=STDOUT)
+				if nav.returncode==0:
+		   			decky.logger.info(f"route to {r} added")
+			except subprocess.CalledProcessError as e:
+				decky.logger.info(e.stderr)
+				pass
 
 	@staticmethod
 	def ClearNetavarkRules():
@@ -96,9 +109,9 @@ class WorkerClass:
 
 	@staticmethod
 	def ReconnectProtocol():
-		subprocess.run(shlex.split("podman restart xivtest"),check=True,capture_output=True)
-		subprocess.run(shlex.split("podman exec xivtest iptables -t nat -F POSTROUTING"),check=True,capture_output=True)
-		subprocess.run(shlex.split("podman exec xivtest /home/iptset.sh"),check=True,capture_output=True)
+		subprocess.run(shlex.split("podman restart xivomega"),check=True,capture_output=True)
+		subprocess.run(shlex.split("podman exec xivomega iptables -t nat -F POSTROUTING"),check=True,capture_output=True)
+		subprocess.run(shlex.split("podman exec xivomega /home/iptset.sh"),check=True,capture_output=True)
 
 	@staticmethod
 	def CreateHostAdapter(virtual_ip,netbits,broadcast):
@@ -129,51 +142,57 @@ class WorkerClass:
 	@staticmethod
 	def SelfDestructProtocol(rt14):
 		decky.logger.info("Terminating Mitigation Protocol and XIVOmega")
-
 		for r in rt14:
 			way = f"ip route del {r} via 10.88.0.7"
-			nav = subprocess.run(shlex.split(way),check=True,capture_output=True)
 			try:
-		   		if nav.returncode==0:
+				nav = subprocess.run(shlex.split(way),check=True,capture_output=True)
+				if nav.returncode==0:
 		   			decky.logger.info(f"route to {r} deleted")
 			except subprocess.CalledProcessError as e:
 					decky.logger.info(e.stderr.decode())
+					pass
 		try:
 			panto = subprocess.run(shlex.split("podman stop xivomega"),check=True,capture_output=True)
 			if panto.returncode == 0:
 				decky.logger.info("XIVOmega Container Stopped")
 		except subprocess.CalledProcessError as e:
 			decky.logger.info(e.stderr.decode())
+			pass
 		try:
 			atomic = subprocess.run(shlex.split("podman network disconnect xivlanc xivomega"),check=True,capture_output=True)
 			if atomic.returncode == 0:
 				decky.logger.info("XIVOmega IPVlan Disconnected")
 		except subprocess.CalledProcessError as e:
 			decky.logger.info(e.stderr.decode())
+			pass
 		try:
 			flame = subprocess.run(shlex.split("podman network rm xivlanc"),check=True,capture_output=True)
 			if flame.returncode == 0:
 				decky.logger.info("XIVOmega IPVlan Removed")
 		except subprocess.CalledProcessError as e:
 			decky.logger.info(e.stderr.decode())
+			pass
 		try:
 			bworld = subprocess.run(shlex.split("podman rm xivomega"),check=True,capture_output=True)
 			if bworld.returncode == 0:
 				decky.logger.info("XIVOmega Container removed")
 		except subprocess.CalledProcessError as e:
 			decky.logger.info(e.stderr.decode())
+			pass
 		try:
 			lanhdie = subprocess.run(shlex.split("ip link set xivlanh down"),check=True,capture_output=True)
 			if lanhdie.returncode == 0:
 				decky.logger.info("Host IPVlan turned off")
 		except subprocess.CalledProcessError as e:
 			decky.logger.info(e.stderr.decode())
+			pass
 		try:
 			lanhrm = subprocess.run(shlex.split("ip link del xivlanh"),check=True,capture_output=True)
 			if lanhrm.returncode == 0:
 				decky.logger.info("Host IPVlan removed")
 		except subprocess.CalledProcessError as e:
 			decky.logger.info(e.stderr.decode())
+			pass
 		decky.logger.info("All done - Goodbye")
 
 	@staticmethod
@@ -193,6 +212,7 @@ class WorkerClass:
 	def startPodman():
 		try:
 			tworld = subprocess.run(shlex.split("podman start xivomega"),check=True,capture_output=True)
+			tworld.wait()
 			if tworld.returncode == 0:
 				decky.logger.info("podman started successfully")
 				decky.logger.info(tworld.stdout.decode())

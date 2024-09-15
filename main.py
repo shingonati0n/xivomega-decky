@@ -15,6 +15,7 @@ import io
 import configparser
 from subprocess import Popen, PIPE, STDOUT, CalledProcessError
 from getpass import getpass
+import pdb
 
 #append py_modules to PYTHONPATH
 sys.path.append(str(Path(__file__).parent / "py_modules"))
@@ -25,6 +26,7 @@ thisusr = decky.USER
 thisusrhome = decky.DECKY_USER_HOME
 
 class ConnectionFailedError(Exception):
+	#decky.logger.info("Connection could not be established, try again")
 	pass
 
 class InvalidIPException(Exception):
@@ -59,10 +61,10 @@ def is_valid_ipv4_address(address):
 		return False
 	return True
 
-def establishConnection(self)->int:
+def establishConnection(self,rt14)->int:
 	ctx = 1
 	decky.loader.info("Establishing network connection...")
-	while(ctx > 0):
+	while(5 > ctx > 0):
 		try:
 			dice = subprocess.run(shlex.split("podman exec xivomega ping 204.2.29.7 -c 5"),check=True,capture_output=True)
 			if dice.returncode == 0:
@@ -71,19 +73,22 @@ def establishConnection(self)->int:
 			else:
 				decky.loader.info("Retrying Connection..")
 				ctx = ctx + 1
-				omegaWorker.WorkerClass().ReconnectProtocol()
-				omegaWorker.WorkerClass().ClearNetavarkRules()
-				omegaWorker.WorkerClass().SetRoutes(roadsto14)
-				if(ctx > 5):
-					return ctx
+				#omegaWorker.WorkerClass().ReconnectProtocol()
+				subprocess.run(shlex.split("podman restart xivomega"),check=True,capture_output=True)
+				subprocess.run(shlex.split("podman exec xivomega iptables -t nat -F POSTROUTING"),check=True,capture_output=True)
+				subprocess.run(shlex.split("podman exec xivomega /home/iptset.sh"),check=True,capture_output=True)
+				#omegaWorker.WorkerClass().ClearNetavarkRules()
+				omegaWorker.WorkerClass().SetRoutes(rt14)
 		except subprocess.CalledProcessError as e:
 			decky.loader.info("Retrying Connection...")
 			ctx = ctx + 1
-			omegaWorker.WorkerClass().ReconnectProtocol()
-			omegaWorker.WorkerClass().ClearNetavarkRules()
-			omegaWorker.WorkerClass().SetRoutes(roadsto14)
-			if(ctx > 5):
-				return ctx
+			#omegaWorker.WorkerClass().ReconnectProtocol()
+			subprocess.run(shlex.split("podman restart xivomega"),check=True,capture_output=True)
+			subprocess.run(shlex.split("podman exec xivomega iptables -t nat -F POSTROUTING"),check=True,capture_output=True)
+			subprocess.run(shlex.split("podman exec xivomega /home/iptset.sh"),check=True,capture_output=True)
+			#omegaWorker.WorkerClass().ClearNetavarkRules()
+			omegaWorker.WorkerClass().SetRoutes(rt14)
+			pass
 	return ctx
 
 #Plugin code
@@ -108,21 +113,51 @@ class Plugin:
 	#mitigator method
 	async def mitigate(self):
 		await asyncio.sleep(5)
+		ctx = 1
 		while True:
 			try:
 				if Plugin._enabled:
 					decky.logger.info("Plugin is enabled")
 					#check if running and if not then start
 					isRunning = omegaWorker.WorkerClass.isRunning()
-					decky.logger.info(isRunning) 
+					decky.logger.info("Is xivomega up??: " + str(isRunning)) 
 					if isRunning == False:
-						decky.logger.info("Activation signal received, starting it")
+						decky.logger.info("Activation signal received, starting")
 						omegaWorker.WorkerClass.startPodman()
 					else: 
-						decky.logger.info("Container started - establishing connection now")
-					conn = Plugin.establishConnection(self)
-					decky.logger.info(str(conn))
-					if conn == 0:
+						decky.logger.info("Container started - set routes and connect")
+		
+					omegaWorker.WorkerClass().SetRoutes(roadsto14)
+					decky.loader.info("Establishing network connection...")
+					while(5 > ctx > 0):
+						try:
+							dice = Popen(shlex.split("podman exec -i xivomega ping 204.2.29.7 -c 5"),stdin=PIPE,stdout=PIPE,stderr=STDOUT)
+							dice.wait()
+							if dice.returncode == 0:
+								decky.loader.info("Network Established")
+								ctx = 0
+							else:
+								decky.loader.info("Retrying Connection..")
+								ctx = ctx + 1
+								#omegaWorker.WorkerClass().ReconnectProtocol()
+								Popen(shlex.split("podman restart xivomega"),stdin=PIPE,stdout=PIPE,stderr=STDOUT)
+								Popen(shlex.split("podman exec -i xivomega iptables -t nat -F POSTROUTING"),stdin=PIPE,stdout=PIPE,stderr=STDOUT)
+								Popen(shlex.split("podman exec -i xivomega /home/iptset.sh"),stdin=PIPE,stdout=PIPE,stderr=STDOUT)
+								#omegaWorker.WorkerClass().ClearNetavarkRules()
+								omegaWorker.WorkerClass().SetRoutes(rt14)
+						except subprocess.CalledProcessError as e:
+							decky.logger.info(e.stderr.decode())
+							decky.loader.info("Retrying Connection...")
+							ctx = ctx + 1
+							#omegaWorker.WorkerClass().ReconnectProtocol()
+							Popen(shlex.split("podman restart xivomega"),stdin=PIPE,stdout=PIPE,stderr=STDOUT)
+							Popen(shlex.split("podman exec -i xivomega iptables -t nat -F POSTROUTING"),stdin=PIPE,stdout=PIPE,stderr=STDOUT)
+							Popen(shlex.split("podman exec -i xivomega /home/iptset.sh"),stdin=PIPE,stdout=PIPE,stderr=STDOUT)
+							#omegaWorker.WorkerClass().ClearNetavarkRules()
+							omegaWorker.WorkerClass().SetRoutes(rt14)
+		
+					decky.logger.info(ctx)
+					if ctx == 0:
 						omega = f"podman exec -i xivomega /home/omega_alpha.sh"
 						xivomega = Popen(shlex.split(omega), stdin=PIPE, stdout=PIPE, stderr=STDOUT)
 						for ln in xivomega.stdout:
@@ -131,11 +166,12 @@ class Plugin:
 					else:
 						raise ConnectionFailedError
 						pass
-				#else:
-					#decky.logger.info("Waiting for activation")
-			except Exception:
+				# else:
+				# 	decky.logger.info("Waiting for activation")
+			except Exception as e:
 				decky.logger.info("failure on process")
-				decky.logger.info(xivomega.stderr)
+				pdb.post_mortem()
+				decky.logger.info(pdb.post_mortem())
 				pass
 			await asyncio.sleep(0.5)
 
@@ -172,6 +208,7 @@ class Plugin:
 		decky.logger.info(f"Podman IPVlan IP: {lip}")
 		decky.logger.info(f"Gateway IP: {fip}")
 		#create network and container
+		omegaWorker.WorkerClass().CreateHostAdapter(vip,netb,brd)
 		omegaWorker.WorkerClass().createIpVlanC(sdsubn,sdgway)
 		omegaWorker.WorkerClass().SelfCreateProtocol(lip)
 		#omegaWorker.WorkerClass().connectIpVlanC(lip)
