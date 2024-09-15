@@ -16,6 +16,7 @@ import configparser
 from subprocess import Popen, PIPE, STDOUT, CalledProcessError
 from getpass import getpass
 import pdb
+import traceback
 
 #append py_modules to PYTHONPATH
 sys.path.append(str(Path(__file__).parent / "py_modules"))
@@ -63,15 +64,16 @@ def is_valid_ipv4_address(address):
 
 def establishConnection(self,rt14)->int:
 	ctx = 1
-	decky.loader.info("Establishing network connection...")
+	decky.logger.info("Establishing network connection...")
 	while(5 > ctx > 0):
 		try:
-			dice = subprocess.run(shlex.split("podman exec xivomega ping 204.2.29.7 -c 5"),check=True,capture_output=True)
+			dice = Popen(shlex.split("podman exec -i xivomega ping 204.2.29.7 -c 5"),stdin=PIPE,stdout=PIPE,stderr=STDOUT)
+			dice.wait()
 			if dice.returncode == 0:
-				decky.loader.info("Network Established")
+				decky.logger.info("Network Established")
 				ctx = 0
 			else:
-				decky.loader.info("Retrying Connection..")
+				decky.logger.info("Retrying Connection..")
 				ctx = ctx + 1
 				#omegaWorker.WorkerClass().ReconnectProtocol()
 				subprocess.run(shlex.split("podman restart xivomega"),check=True,capture_output=True)
@@ -80,7 +82,7 @@ def establishConnection(self,rt14)->int:
 				#omegaWorker.WorkerClass().ClearNetavarkRules()
 				omegaWorker.WorkerClass().SetRoutes(rt14)
 		except subprocess.CalledProcessError as e:
-			decky.loader.info("Retrying Connection...")
+			decky.logger.info("Retrying Connection...")
 			ctx = ctx + 1
 			#omegaWorker.WorkerClass().ReconnectProtocol()
 			subprocess.run(shlex.split("podman restart xivomega"),check=True,capture_output=True)
@@ -126,36 +128,8 @@ class Plugin:
 						omegaWorker.WorkerClass.startPodman()
 					else: 
 						decky.logger.info("Container started - set routes and connect")
-		
 					omegaWorker.WorkerClass().SetRoutes(roadsto14)
-					decky.loader.info("Establishing network connection...")
-					while(5 > ctx > 0):
-						try:
-							dice = Popen(shlex.split("podman exec -i xivomega ping 204.2.29.7 -c 5"),stdin=PIPE,stdout=PIPE,stderr=STDOUT)
-							dice.wait()
-							if dice.returncode == 0:
-								decky.loader.info("Network Established")
-								ctx = 0
-							else:
-								decky.loader.info("Retrying Connection..")
-								ctx = ctx + 1
-								#omegaWorker.WorkerClass().ReconnectProtocol()
-								Popen(shlex.split("podman restart xivomega"),stdin=PIPE,stdout=PIPE,stderr=STDOUT)
-								Popen(shlex.split("podman exec -i xivomega iptables -t nat -F POSTROUTING"),stdin=PIPE,stdout=PIPE,stderr=STDOUT)
-								Popen(shlex.split("podman exec -i xivomega /home/iptset.sh"),stdin=PIPE,stdout=PIPE,stderr=STDOUT)
-								#omegaWorker.WorkerClass().ClearNetavarkRules()
-								omegaWorker.WorkerClass().SetRoutes(rt14)
-						except subprocess.CalledProcessError as e:
-							decky.logger.info(e.stderr.decode())
-							decky.loader.info("Retrying Connection...")
-							ctx = ctx + 1
-							#omegaWorker.WorkerClass().ReconnectProtocol()
-							Popen(shlex.split("podman restart xivomega"),stdin=PIPE,stdout=PIPE,stderr=STDOUT)
-							Popen(shlex.split("podman exec -i xivomega iptables -t nat -F POSTROUTING"),stdin=PIPE,stdout=PIPE,stderr=STDOUT)
-							Popen(shlex.split("podman exec -i xivomega /home/iptset.sh"),stdin=PIPE,stdout=PIPE,stderr=STDOUT)
-							#omegaWorker.WorkerClass().ClearNetavarkRules()
-							omegaWorker.WorkerClass().SetRoutes(rt14)
-		
+					ctx = establishConnection(self,roadsto14) 
 					decky.logger.info(ctx)
 					if ctx == 0:
 						omega = f"podman exec -i xivomega /home/omega_alpha.sh"
@@ -170,8 +144,8 @@ class Plugin:
 				# 	decky.logger.info("Waiting for activation")
 			except Exception as e:
 				decky.logger.info("failure on process")
-				pdb.post_mortem()
 				decky.logger.info(pdb.post_mortem())
+				decky.logger.info(traceback.format_exc())
 				pass
 			await asyncio.sleep(0.5)
 
@@ -219,6 +193,7 @@ class Plugin:
 			decky.logger.info("Mitigation initiated")
 		except Exception:
 			decky.logger.exception("main")
+			decky.logger.info(pdb.post_mortem())
 		except ConnectionFailedError:
 			decky.logger.info("Connection Failed")
 
