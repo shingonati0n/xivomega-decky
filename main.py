@@ -75,20 +75,12 @@ def establishConnection(self,rt14)->int:
 			else:
 				decky.logger.info("Retrying Connection..")
 				ctx = ctx + 1
-				#omegaWorker.WorkerClass().ReconnectProtocol()
-				subprocess.run(shlex.split("podman restart xivomega"),check=True,capture_output=True)
-				subprocess.run(shlex.split("podman exec xivomega iptables -t nat -F POSTROUTING"),check=True,capture_output=True)
-				subprocess.run(shlex.split("podman exec xivomega /home/iptset.sh"),check=True,capture_output=True)
-				#omegaWorker.WorkerClass().ClearNetavarkRules()
+				omegaWorker.WorkerClass().ReconnectProtocol()
 				omegaWorker.WorkerClass().SetRoutes(rt14)
 		except subprocess.CalledProcessError as e:
 			decky.logger.info("Retrying Connection...")
 			ctx = ctx + 1
-			#omegaWorker.WorkerClass().ReconnectProtocol()
-			subprocess.run(shlex.split("podman restart xivomega"),check=True,capture_output=True)
-			subprocess.run(shlex.split("podman exec xivomega iptables -t nat -F POSTROUTING"),check=True,capture_output=True)
-			subprocess.run(shlex.split("podman exec xivomega /home/iptset.sh"),check=True,capture_output=True)
-			#omegaWorker.WorkerClass().ClearNetavarkRules()
+			omegaWorker.WorkerClass().ReconnectProtocol()
 			omegaWorker.WorkerClass().SetRoutes(rt14)
 			pass
 	return ctx
@@ -110,6 +102,8 @@ class Plugin:
 		if Plugin._enabled == True and check['checkd'] == False:
 			decky.logger.info("Switched via toggle_status")
 			omegaWorker.WorkerClass().stopPodman()
+			#ToDo: disconnect container from xivlanc and remove xivlanc
+			#ToDo: kill xivlanh 
 		Plugin._enabled = check['checkd']
 
 	#mitigator method
@@ -122,37 +116,39 @@ class Plugin:
 					decky.logger.info("Plugin is enabled")
 					#check if running and if not then start
 					isRunning = omegaWorker.WorkerClass.isRunning()
-					decky.logger.info("Is xivomega up??: " + str(isRunning)) 
+					#decky.logger.info("Is xivomega up??: " + str(isRunning)) 
 					if isRunning == False:
 						decky.logger.info("Activation signal received, starting")
 						omegaWorker.WorkerClass.startPodman()
+						#ToDo: recreate xivlanc - using current connection ip and stuff
+						#ToDo: recreate xivlanh
+						#Todo: connect container to it 
 					else: 
 						decky.logger.info("Container started - set routes and connect")
 					omegaWorker.WorkerClass().SetRoutes(roadsto14)
 					ctx = establishConnection(self,roadsto14) 
-					decky.logger.info(ctx)
+					#decky.logger.info(ctx)
 					if ctx == 0:
 						omega = f"podman exec -i xivomega /home/omega_alpha.sh"
 						#xivomega = Popen(shlex.split(omega), stdin=PIPE, stdout=PIPE, stderr=STDOUT, text=True)
 						xivomega = await asyncio.create_subprocess_exec(*shlex.split(omega), stdin=PIPE, stdout=PIPE, stderr=STDOUT)
-						# for ln in xivomega.stdout:
-						# 	decky.logger.info(ln)
-						# 	await asyncio.sleep(0.5)
 						while True:
 							try:
-								Plugin._enabled = True
-								ln = await asyncio.wait_for(xivomega.stdout.readline(),1)
-								if ln:
-									decky.logger.info(ln.decode('utf-8').strip())
-									await asyncio.sleep(0.5)
+								if Plugin._enabled:
+									ln = await asyncio.wait_for(xivomega.stdout.readline(),1)
+									if ln:
+										decky.logger.info(ln.decode('utf-8').strip())
+										await asyncio.sleep(0.5)
+								else:
+									break
 							except asyncio.TimeoutError:
 								await asyncio.sleep(0.5)
+								if not Plugin._enabled:
+									break
 								pass			
 					else:
 						raise ConnectionFailedError
 						pass
-				# else:
-				# 	decky.logger.info("Waiting for activation")
 			except Exception as e:
 				decky.logger.info("Failure on process")
 				decky.logger.info(traceback.format_exc())
@@ -167,27 +163,22 @@ class Plugin:
 
 	# Asyncio-compatible long-running code, executed in a task when the plugin is loaded
 	async def _main(self):
-		# Omega Code will go here 
 		# BIG FYI - Decky uses /usr/bin/podman!!! have this in mind in case something needs fixing or anything
 		#network preparations
 		#get IP address with cidr from wlan0 only - eth0 en ens* not supported yet
+		await asyncio.sleep(10)
 		ipv4 = os.popen('ip addr show wlan0').read().split("inet ")[1].split(" brd")[0] 
 		ipv4n, netb = ipv4.split('/')
 		subn = ipaddress.ip_network(cidr_to_netmask(ipv4)[0]+'/'+cidr_to_netmask(ipv4)[1], strict=False)
 		sdgway = '.'.join(ipv4n.split('.')[:3]) + ".1"
 		sdsubn = str(subn.network_address) + "/" + netb
-		#get first and last ips from current network 
-		#fip is the gateway
-		#vip is the ipvlan host adapter - penultimate IP from network
-		#lip is the ipvlan from podman - last ip address
+		#get first and last ips from current wifi network 
 		nt = ipaddress.IPv4Network(sdsubn)
 		fip = str(nt[1])
 		vip = str(nt[-4])
 		lip = str(nt[-3])
 		brd = str(nt.broadcast_address)
 		decky.logger.info("Starting main program")
-		decky.logger.info(thisusr)
-		decky.logger.info(thisusrhome)
 		decky.logger.info(f"Host IPVlan IP: {vip}")
 		decky.logger.info(f"Podman IPVlan IP: {lip}")
 		decky.logger.info(f"Gateway IP: {fip}")
@@ -195,25 +186,15 @@ class Plugin:
 		omegaWorker.WorkerClass().CreateHostAdapter(vip,netb,brd)
 		omegaWorker.WorkerClass().createIpVlanC(sdsubn,sdgway)
 		omegaWorker.WorkerClass().SelfCreateProtocol(lip)
-		#omegaWorker.WorkerClass().connectIpVlanC(lip)
 		#main loop - it works!!
 		try:
 			loop = asyncio.get_event_loop()
 			Plugin._runner_task = loop.create_task(Plugin.mitigate(self))
-			decky.logger.info("Mitigation initiated")
+			decky.logger.info("Mitigation Protocol Initiated")
 		except Exception:
 			decky.logger.exception("main")
-			decky.logger.info(pdb.post_mortem())
 		except ConnectionFailedError:
 			decky.logger.info("Connection Failed")
-
-	# Enable services
-	# async def enable(self):
-	#     Plugin._enabled = True
-
-	# Disable services
-	# async def disable(self):
-	#     Plugin._enabled = False
 
 		# Function called first during the unload process, utilize this to handle your plugin being stopped, but not
 	# completely removed

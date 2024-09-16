@@ -90,24 +90,6 @@ class WorkerClass:
 				pass
 
 	@staticmethod
-	def SetRoutesPopen(rt14):
-		for r in rt14:
-			way = f"ip route add {r} via 10.88.0.7"
-			try:
-				nav = Popen(shlex.split(way),stdin=PIPE,stdout=PIPE,stderr=STDOUT)
-				if nav.returncode==0:
-		   			decky.logger.info(f"route to {r} added")
-			except subprocess.CalledProcessError as e:
-				decky.logger.info(e.stderr)
-				pass
-
-	@staticmethod
-	def ClearNetavarkRules():
-		subprocess.run(shlex.split("iptables -F INPUT"),check=True,capture_output=True)
-		subprocess.run(shlex.split("iptables -F FORWARD"),check=True,capture_output=True)
-		subprocess.run(shlex.split("iptables -F OUTPUT"),check=True,capture_output=True)
-
-	@staticmethod
 	def ReconnectProtocol():
 		subprocess.run(shlex.split("podman restart xivomega"),check=True,capture_output=True)
 		subprocess.run(shlex.split("podman exec xivomega iptables -t nat -F POSTROUTING"),check=True,capture_output=True)
@@ -212,7 +194,6 @@ class WorkerClass:
 	def startPodman():
 		try:
 			tworld = subprocess.run(shlex.split("podman start xivomega"),check=True,capture_output=True)
-			tworld.wait()
 			if tworld.returncode == 0:
 				decky.logger.info("podman started successfully")
 				decky.logger.info(tworld.stdout.decode())

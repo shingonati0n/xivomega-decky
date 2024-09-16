@@ -34,9 +34,13 @@ function Content() {
 	return (
 		<PanelSection>
 			<PanelSectionRow>
+				Logo Goes Here
+			</PanelSectionRow>
+			<PanelSectionRow>
 			<ToggleField
 					label="Enable Mitigation"
 					checked={checkd}
+					//ToDo: Disable toggling while podman elements are changing - special care on connecting and Retrying!
 					onChange={ async(e) => { setCheckd(e); onClick(e); }}
 			/>
 			</PanelSectionRow>
@@ -44,19 +48,27 @@ function Content() {
 			{checkd && (
 				<div>
 					<strong>
-						<em>Mitigator Enabled</em>
+						<em>Mitigation Protocol ON</em>
 					</strong>
-				
+					<br/>
+					Latency is being mitigated now. If toggling this
+					while playing, you will be disconnected from the game.
+					<em>Make sure to toggle this off after you have finished playing!</em>
 				</div>
 			)}
 			{!checkd && (
 				<div>
 					<strong>
-						<em>False False</em>
+						<em>Mitigation Protocol OFF</em>
+					<br />
+					Toggle this <em>before</em> starting your game. This will 
+					enbale a container and will run the XivMitmLatencyMitigator as if 
+					you were using it in another machine.
 					</strong>
-				
 				</div>
 			)}
+			</PanelSectionRow>
+			<PanelSectionRow> 
 			</PanelSectionRow>
 		</PanelSection>
 	);
