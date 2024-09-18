@@ -1,5 +1,5 @@
 {
-  "name": "XIVOmega Plugin",
+  "name": "XIVOmega",
   "author": "Hugo Muñoz",
   "flags": ["debug", "root"],
   "api_version": 1,

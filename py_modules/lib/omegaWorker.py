@@ -67,15 +67,48 @@ class WorkerClass:
 			print(e.stderr.decode())
 	
 	@staticmethod
-	def fixPodmanStorage():
-		podstorecmd = "cp /home/deck/xivomega/storage/storage.conf /etc/containers/storage.conf"
+	def fixPodmanStorage(runpath):
+		podstorecmd = f"cp /etc/containers/storage.conf {runpath}/storage.conf.bak"
 		psf = subprocess.run(shlex.split(podstorecmd),check=True,capture_output=True)
 		try:
 		   	if psf.returncode==0:
-		   		decky.logger.info("/etc/containers/storage.conf was patched")
+		   		decky.logger.info("/etc/containers/storage.conf backed up")
 		   		pass
 		except subprocess.CalledProcessError as e:
 			decky.logger.info(e.stderr.decode())
+		
+		search_text = 'graphroot = "/var/lib/containers/storage"'
+		new_text = f'graphroot = "{runpath}"'
+		decky.logger.info(search_text)
+		decky.logger.info(new_text)
+
+		with open(Path(runpath) / "storage.conf.bak","r") as cfile:
+			nfile = cfile.read()
+			nfile = nfile.replace(search_text,new_text)
+		
+		with open(Path(runpath) / "storage_new.conf","w") as ffile:
+			ffile.write(nfile)
+
+		pushfix = f"cp {runpath}/storage_new.conf /etc/containers/storage.conf"
+		fpush = subprocess.run(shlex.split(pushfix),check=True,capture_output=True)
+		try:
+			if fpush.returncode==0:
+				decky.logger.info("/etc/container/storage.conf has been patched")
+				decky.logger.info(f"podman image will be saved to {runpath}")
+		except subprocess.CalledProcessError as e:
+			decky.logger.info(e.stderr.decode())
+
+	@staticmethod
+	def restorePodmanStorage(runpath):
+		podstorecmd = f"cp {runpath}/storage.conf.bak /etc/containers/storage.conf"
+		psf = subprocess.run(shlex.split(podstorecmd),check=True,capture_output=True)
+		try:
+		   	if psf.returncode==0:
+		   		decky.logger.info("original /etc/containers/storage.conf has been restored")
+		   		pass
+		except subprocess.CalledProcessError as e:
+			decky.logger.info(e.stderr.decode())
+
 
 	@staticmethod
 	def SetRoutes(rt14):
@@ -120,6 +153,53 @@ class WorkerClass:
 				decky.logger.info("host ipvlan interface is up")
 		except subprocess.CalledProcessError as e:
 			decky.logger.info(e.stderr.decode())
+
+	@staticmethod
+	def SelfDisableProtocol():
+		decky.logger.info("Stopping XIVOmega")
+		try:
+			panto = subprocess.run(shlex.split("podman stop xivomega"),check=True,capture_output=True)
+			if panto.returncode == 0:
+				decky.logger.info("XIVOmega Container Stopped")
+		except subprocess.CalledProcessError as e:
+			decky.logger.info(e.stderr.decode())
+			pass
+		try:
+			atomic = subprocess.run(shlex.split("podman network disconnect xivlanc xivomega"),check=True,capture_output=True)
+			if atomic.returncode == 0:
+				decky.logger.info("XIVOmega IPVlan Disconnected")
+		except subprocess.CalledProcessError as e:
+			decky.logger.info(e.stderr.decode())
+			pass
+		try:
+			flame = subprocess.run(shlex.split("podman network rm xivlanc"),check=True,capture_output=True)
+			if flame.returncode == 0:
+				decky.logger.info("XIVOmega IPVlan Removed")
+		except subprocess.CalledProcessError as e:
+			decky.logger.info(e.stderr.decode())
+			pass
+		try:
+			bworld = subprocess.run(shlex.split("podman rm xivomega"),check=True,capture_output=True)
+			if bworld.returncode == 0:
+				decky.logger.info("XIVOmega Container removed")
+		except subprocess.CalledProcessError as e:
+			decky.logger.info(e.stderr.decode())
+			pass
+		try:
+			lanhdie = subprocess.run(shlex.split("ip link set xivlanh down"),check=True,capture_output=True)
+			if lanhdie.returncode == 0:
+				decky.logger.info("Host IPVlan turned off")
+		except subprocess.CalledProcessError as e:
+			decky.logger.info(e.stderr.decode())
+			pass
+		try:
+			lanhrm = subprocess.run(shlex.split("ip link del xivlanh"),check=True,capture_output=True)
+			if lanhrm.returncode == 0:
+				decky.logger.info("Host IPVlan removed")
+		except subprocess.CalledProcessError as e:
+			decky.logger.info(e.stderr.decode())
+			pass
+		decky.logger.info("Awaiting for renablement")
 
 	@staticmethod
 	def SelfDestructProtocol(rt14):

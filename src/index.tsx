@@ -14,11 +14,14 @@ import {
 import { useState, useEffect } from "react";
 import { BiTv } from "react-icons/bi";
 
+import logo from "../assets/XIVOmegaLogo.png";
+
 const onKill = async() => {call('stop_status')}
 
 function Content() {
 	const [checkd, setCheckd] = useState<boolean>(false);
-
+	//const [loading,setLoading] = useState<boolean>(false);
+	
 	const onClick = async(e:boolean) => {
 		call("toggle_status",{ checkd: e });
 	};
@@ -34,7 +37,9 @@ function Content() {
 	return (
 		<PanelSection>
 			<PanelSectionRow>
-				Logo Goes Here
+				<div style={{display:"flex", justifyContent: "center"}} >
+					<img src={logo} />
+				</div>
 			</PanelSectionRow>
 			<PanelSectionRow>
 			<ToggleField
@@ -47,24 +52,20 @@ function Content() {
 			<PanelSectionRow>
 			{checkd && (
 				<div>
-					<strong>
-						<em>Mitigation Protocol ON</em>
-					</strong>
+						Mitigation Protocol <b>ON</b>
 					<br/>
-					Latency is being mitigated now. If toggling this
-					while playing, you will be disconnected from the game.
-					<em>Make sure to toggle this off after you have finished playing!</em>
+					Latency is being mitigated now. <b>Toggling this off
+					while ingame will disconnect you from the game.</b>
+					<em><b>Make sure to toggle this off after you have finished playing!</b></em>
 				</div>
 			)}
 			{!checkd && (
 				<div>
-					<strong>
-						<em>Mitigation Protocol OFF</em>
+						Mitigation Protocol <b>OFF</b>
 					<br />
-					Toggle this <em>before</em> starting your game. This will 
-					enbale a container and will run the XivMitmLatencyMitigator as if 
+					Toggle this <b>before</b> starting your game. This will 
+					enable a container and will run the XivMitmLatencyMitigator as if 
 					you were using it in another machine.
-					</strong>
 				</div>
 			)}
 			</PanelSectionRow>

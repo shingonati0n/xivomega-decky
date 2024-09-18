@@ -25,6 +25,7 @@ from lib import omegaWorker
 
 thisusr = decky.USER
 thisusrhome = decky.DECKY_USER_HOME
+xivomega_storage = decky.DECKY_PLUGIN_RUNTIME_DIR
 
 class ConnectionFailedError(Exception):
 	#decky.logger.info("Connection could not be established, try again")
@@ -40,6 +41,8 @@ roadsto14 = [
 	"202.67.52.0/24",
 	"204.2.29.0/24",
 	"80.239.145.0/24"]
+
+#fix etc/containers/storage.conf to avoid podman no space left issue
 
 #get subnet mask and subnet
 def cidr_to_netmask(cidr):
@@ -85,6 +88,31 @@ def establishConnection(self,rt14)->int:
 			pass
 	return ctx
 
+def networkSetup(self):
+	netwElems = {}
+	ipv4 = os.popen('ip addr show wlan0').read().split("inet ")[1].split(" brd")[0] 
+	ipv4n, netb = ipv4.split('/')
+	subn = ipaddress.ip_network(cidr_to_netmask(ipv4)[0]+'/'+cidr_to_netmask(ipv4)[1], strict=False)
+	sdgway = '.'.join(ipv4n.split('.')[:3]) + ".1"
+	sdsubn = str(subn.network_address) + "/" + netb
+	nt = ipaddress.IPv4Network(sdsubn)
+	fip = str(nt[1])
+	vip = str(nt[-4])
+	lip = str(nt[-3])
+	brd = str(nt.broadcast_address)
+	netwElems["ipv4"] = ipv4
+	netwElems["ipv4n"] = ipv4n
+	netwElems["netb"] = netb
+	netwElems["subn"] = subn
+	netwElems["sdgway"] = sdgway
+	netwElems["sdsubn"] = sdsubn
+	netwElems["nt"] = nt
+	netwElems["fip"] = fip
+	netwElems["vip"] = vip
+	netwElems["lip"] = lip 
+	netwElems["brd"] = brd 
+	return netwElems
+
 #Plugin code
 class Plugin:
 
@@ -100,8 +128,9 @@ class Plugin:
 		decky.logger.info(check['checkd'])
 		decky.logger.info(type(check['checkd']))
 		if Plugin._enabled == True and check['checkd'] == False:
-			decky.logger.info("Switched via toggle_status")
+			decky.logger.info("Disabling XIVOmega")
 			omegaWorker.WorkerClass().stopPodman()
+			omegaWorker.WorkerClass().SelfDisableProtocol()
 			#ToDo: disconnect container from xivlanc and remove xivlanc
 			#ToDo: kill xivlanh 
 		Plugin._enabled = check['checkd']
@@ -113,16 +142,16 @@ class Plugin:
 		while True:
 			try:
 				if Plugin._enabled:
-					decky.logger.info("Plugin is enabled")
+					decky.logger.info("XIVOmega is enabled")
 					#check if running and if not then start
 					isRunning = omegaWorker.WorkerClass.isRunning()
 					#decky.logger.info("Is xivomega up??: " + str(isRunning)) 
 					if isRunning == False:
-						decky.logger.info("Activation signal received, starting")
-						omegaWorker.WorkerClass.startPodman()
-						#ToDo: recreate xivlanc - using current connection ip and stuff
-						#ToDo: recreate xivlanh
-						#Todo: connect container to it 
+						decky.logger.info("Activation signal received, starting new container and network config")
+						netw = networkSetup(self)
+						omegaWorker.WorkerClass().CreateHostAdapter(netw["vip"],netw["netb"],netw["brd"])
+						omegaWorker.WorkerClass().createIpVlanC(netw["sdsubn"],netw["sdgway"])
+						omegaWorker.WorkerClass().SelfCreateProtocol(netw["lip"])
 					else: 
 						decky.logger.info("Container started - set routes and connect")
 					omegaWorker.WorkerClass().SetRoutes(roadsto14)
@@ -155,7 +184,6 @@ class Plugin:
 				pass
 			await asyncio.sleep(0.5)
 
-
 	#function for onKill
 	async def stop_status(self):
 		Plugin._enabled = False
@@ -164,28 +192,22 @@ class Plugin:
 	# Asyncio-compatible long-running code, executed in a task when the plugin is loaded
 	async def _main(self):
 		# BIG FYI - Decky uses /usr/bin/podman!!! have this in mind in case something needs fixing or anything
+		# check if podman storage is patched
+		decky.logger.info(xivomega_storage)
+		if not os.path.isfile(Path(xivomega_storage) / "storage.conf.bak"):
+			omegaWorker.WorkerClass().fixPodmanStorage(xivomega_storage)
+			decky.logger.info("Initiating storage.conf patching process")
 		#network preparations
 		#get IP address with cidr from wlan0 only - eth0 en ens* not supported yet
-		await asyncio.sleep(10)
-		ipv4 = os.popen('ip addr show wlan0').read().split("inet ")[1].split(" brd")[0] 
-		ipv4n, netb = ipv4.split('/')
-		subn = ipaddress.ip_network(cidr_to_netmask(ipv4)[0]+'/'+cidr_to_netmask(ipv4)[1], strict=False)
-		sdgway = '.'.join(ipv4n.split('.')[:3]) + ".1"
-		sdsubn = str(subn.network_address) + "/" + netb
-		#get first and last ips from current wifi network 
-		nt = ipaddress.IPv4Network(sdsubn)
-		fip = str(nt[1])
-		vip = str(nt[-4])
-		lip = str(nt[-3])
-		brd = str(nt.broadcast_address)
+		netw = networkSetup(self)
 		decky.logger.info("Starting main program")
-		decky.logger.info(f"Host IPVlan IP: {vip}")
-		decky.logger.info(f"Podman IPVlan IP: {lip}")
-		decky.logger.info(f"Gateway IP: {fip}")
+		decky.logger.info(f"Host IPVlan IP: " + str(netw["vip"]))
+		decky.logger.info(f"Podman IPVlan IP: " + str(netw["lip"]))
+		decky.logger.info(f"Gateway IP: " + str(netw["fip"]))
 		#create network and container
-		omegaWorker.WorkerClass().CreateHostAdapter(vip,netb,brd)
-		omegaWorker.WorkerClass().createIpVlanC(sdsubn,sdgway)
-		omegaWorker.WorkerClass().SelfCreateProtocol(lip)
+		omegaWorker.WorkerClass().CreateHostAdapter(netw["vip"],netw["netb"],netw["brd"])
+		omegaWorker.WorkerClass().createIpVlanC(netw["sdsubn"],netw["sdgway"])
+		omegaWorker.WorkerClass().SelfCreateProtocol(netw["lip"])
 		#main loop - it works!!
 		try:
 			loop = asyncio.get_event_loop()
@@ -201,6 +223,7 @@ class Plugin:
 	async def _unload(self):
 		Plugin.stop_status(self)
 		omegaWorker.WorkerClass.SelfDestructProtocol(roadsto14)
+		omegaWorker.WorkerClass.restorePodmanStorage(xivomega_storage)
 		decky.logger.info("Goodnight World!")
 		pass
 
