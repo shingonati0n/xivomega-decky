@@ -6,7 +6,8 @@ import {
 } from "@decky/ui";
 
 import {
-//	callable,
+	addEventListener,
+	removeEventListener,
 	call,
 	definePlugin,
 } from "@decky/api"
@@ -20,17 +21,28 @@ const onKill = async() => {call('stop_status')}
 
 function Content() {
 	const [checkd, setCheckd] = useState<boolean>(false);
-	//const [loading,setLoading] = useState<boolean>(false);
-	
+	const [loading,setLoading] = useState<boolean>(false);
+
+	function enableToggle() {
+		setLoading(false);
+	};
+
 	const onClick = async(e:boolean) => {
 		call("toggle_status",{ checkd: e });
-	};
+		setLoading(true);
+	}
+	
+	useEffect(()=>{
+		addEventListener('turnToggleOn',enableToggle);
+	return() => {
+		removeEventListener('turnToggleOn',enableToggle);
+		}
+	},[]);
 
 	const initState = async () => {
 		const getIsEnabledResponse = await call<[],boolean>("curr_status");
 		setCheckd(getIsEnabledResponse);
 	}
-
 	useEffect(() => {
 			initState();
 	}, []);
@@ -45,12 +57,12 @@ function Content() {
 			<ToggleField
 					label="Enable Mitigation"
 					checked={checkd}
-					//ToDo: Disable toggling while podman elements are changing - special care on connecting and Retrying!
+					disabled={loading}
 					onChange={ async(e) => { setCheckd(e); onClick(e); }}
 			/>
 			</PanelSectionRow>
 			<PanelSectionRow>
-			{checkd && (
+			{checkd && !loading && (
 				<div>
 						Mitigation Protocol <b>ON</b>
 					<br/>
@@ -59,7 +71,14 @@ function Content() {
 					<em><b>Make sure to toggle this off after you have finished playing!</b></em>
 				</div>
 			)}
-			{!checkd && (
+			{checkd && loading && (
+				<div>
+						<b>Enabling Mitigator...</b>
+					<br/>
+					Mitigation protocol is currently being activated, please wait until completed
+				</div>
+			)}
+			{!checkd && !loading && (
 				<div>
 						Mitigation Protocol <b>OFF</b>
 					<br />
@@ -68,8 +87,13 @@ function Content() {
 					you were using it in another machine.
 				</div>
 			)}
-			</PanelSectionRow>
-			<PanelSectionRow> 
+			{!checkd && loading && (
+				<div>
+						<b>Disabling Mitigator...</b>
+					<br />
+					XIVOmega is being turned off now. Please wait
+				</div>
+			)}			
 			</PanelSectionRow>
 		</PanelSection>
 	);

@@ -199,7 +199,48 @@ class WorkerClass:
 		except subprocess.CalledProcessError as e:
 			decky.logger.info(e.stderr.decode())
 			pass
-		decky.logger.info("Awaiting for renablement")
+		decky.logger.info("Awaiting reactivation")
+
+	@staticmethod
+	def SelfCleaningProtocol():
+		decky.logger.info("Stopping XIVOmega if up")
+		try:
+			panto = subprocess.run(shlex.split("podman stop xivomega"),check=True,capture_output=True)
+			if panto.returncode == 0:
+				decky.logger.info("XIVOmega Container Stopped")
+		except subprocess.CalledProcessError as e:
+			pass
+		try:
+			atomic = subprocess.run(shlex.split("podman network disconnect xivlanc xivomega"),check=True,capture_output=True)
+			if atomic.returncode == 0:
+				decky.logger.info("XIVOmega IPVlan Disconnected")
+		except subprocess.CalledProcessError as e:
+			pass
+		try:
+			flame = subprocess.run(shlex.split("podman network rm xivlanc"),check=True,capture_output=True)
+			if flame.returncode == 0:
+				decky.logger.info("XIVOmega IPVlan Removed")
+		except subprocess.CalledProcessError as e:
+			pass
+		try:
+			bworld = subprocess.run(shlex.split("podman rm xivomega"),check=True,capture_output=True)
+			if bworld.returncode == 0:
+				decky.logger.info("XIVOmega Container removed")
+		except subprocess.CalledProcessError as e:
+			pass
+		try:
+			lanhdie = subprocess.run(shlex.split("ip link set xivlanh down"),check=True,capture_output=True)
+			if lanhdie.returncode == 0:
+				decky.logger.info("Host IPVlan turned off")
+		except subprocess.CalledProcessError as e:
+			pass
+		try:
+			lanhrm = subprocess.run(shlex.split("ip link del xivlanh"),check=True,capture_output=True)
+			if lanhrm.returncode == 0:
+				decky.logger.info("Host IPVlan removed")
+		except subprocess.CalledProcessError as e:
+			pass
+		decky.logger.info("Cleanup Completed")
 
 	@staticmethod
 	def SelfDestructProtocol(rt14):

@@ -131,8 +131,7 @@ class Plugin:
 			decky.logger.info("Disabling XIVOmega")
 			omegaWorker.WorkerClass().stopPodman()
 			omegaWorker.WorkerClass().SelfDisableProtocol()
-			#ToDo: disconnect container from xivlanc and remove xivlanc
-			#ToDo: kill xivlanh 
+		await decky.emit("turnToggleOn")
 		Plugin._enabled = check['checkd']
 
 	#mitigator method
@@ -146,6 +145,7 @@ class Plugin:
 					#check if running and if not then start
 					isRunning = omegaWorker.WorkerClass.isRunning()
 					#decky.logger.info("Is xivomega up??: " + str(isRunning)) 
+					#await decky.emit("turnToggleOff")
 					if isRunning == False:
 						decky.logger.info("Activation signal received, starting new container and network config")
 						netw = networkSetup(self)
@@ -158,8 +158,8 @@ class Plugin:
 					ctx = establishConnection(self,roadsto14) 
 					#decky.logger.info(ctx)
 					if ctx == 0:
+						await decky.emit("turnToggleOn")
 						omega = f"podman exec -i xivomega /home/omega_alpha.sh"
-						#xivomega = Popen(shlex.split(omega), stdin=PIPE, stdout=PIPE, stderr=STDOUT, text=True)
 						xivomega = await asyncio.create_subprocess_exec(*shlex.split(omega), stdin=PIPE, stdout=PIPE, stderr=STDOUT)
 						while True:
 							try:
@@ -177,10 +177,12 @@ class Plugin:
 								pass			
 					else:
 						raise ConnectionFailedError
+						await decky.emit("turnToggleOn")
 						pass
 			except Exception as e:
 				decky.logger.info("Failure on process")
 				decky.logger.info(traceback.format_exc())
+				await decky.emit("turnToggleOn")
 				pass
 			await asyncio.sleep(0.5)
 
@@ -192,6 +194,7 @@ class Plugin:
 	# Asyncio-compatible long-running code, executed in a task when the plugin is loaded
 	async def _main(self):
 		# BIG FYI - Decky uses /usr/bin/podman!!! have this in mind in case something needs fixing or anything
+		omegaWorker.WorkerClass.SelfCleaningProtocol()
 		# check if podman storage is patched
 		decky.logger.info(xivomega_storage)
 		if not os.path.isfile(Path(xivomega_storage) / "storage.conf.bak"):
@@ -204,19 +207,17 @@ class Plugin:
 		decky.logger.info(f"Host IPVlan IP: " + str(netw["vip"]))
 		decky.logger.info(f"Podman IPVlan IP: " + str(netw["lip"]))
 		decky.logger.info(f"Gateway IP: " + str(netw["fip"]))
-		#create network and container
-		omegaWorker.WorkerClass().CreateHostAdapter(netw["vip"],netw["netb"],netw["brd"])
-		omegaWorker.WorkerClass().createIpVlanC(netw["sdsubn"],netw["sdgway"])
-		omegaWorker.WorkerClass().SelfCreateProtocol(netw["lip"])
-		#main loop - it works!!
+		#main loop
 		try:
 			loop = asyncio.get_event_loop()
 			Plugin._runner_task = loop.create_task(Plugin.mitigate(self))
 			decky.logger.info("Mitigation Protocol Initiated")
 		except Exception:
 			decky.logger.exception("main")
+			pass
 		except ConnectionFailedError:
 			decky.logger.info("Connection Failed")
+			pass
 
 		# Function called first during the unload process, utilize this to handle your plugin being stopped, but not
 	# completely removed
