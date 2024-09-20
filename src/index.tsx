@@ -27,14 +27,20 @@ function Content() {
 		setLoading(false);
 	};
 
+	function disableToggle() {
+		setLoading(true);
+	};
+
 	const onClick = async(e:boolean) => {
 		call("toggle_status",{ checkd: e });
 		setLoading(true);
 	}
 	
 	useEffect(()=>{
+		addEventListener('turnToggleOff',disableToggle);
 		addEventListener('turnToggleOn',enableToggle);
 	return() => {
+		removeEventListener('turnToggleOff',disableToggle);
 		removeEventListener('turnToggleOn',enableToggle);
 		}
 	},[]);

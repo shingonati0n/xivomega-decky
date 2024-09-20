@@ -141,6 +141,7 @@ class Plugin:
 		while True:
 			try:
 				if Plugin._enabled:
+					await decky.emit("turnToggleOff")
 					decky.logger.info("XIVOmega is enabled")
 					#check if running and if not then start
 					isRunning = omegaWorker.WorkerClass.isRunning()
@@ -156,7 +157,6 @@ class Plugin:
 						decky.logger.info("Container started - set routes and connect")
 					omegaWorker.WorkerClass().SetRoutes(roadsto14)
 					ctx = establishConnection(self,roadsto14) 
-					#decky.logger.info(ctx)
 					if ctx == 0:
 						await decky.emit("turnToggleOn")
 						omega = f"podman exec -i xivomega /home/omega_alpha.sh"
