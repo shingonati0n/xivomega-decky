@@ -5,7 +5,10 @@ import {
 	Spinner,
 	staticClasses,
 	ButtonItem,
-	Navigation
+	Navigation,
+	showContextMenu,
+	Menu,
+	DialogButton
 } from "@decky/ui";
 
 import {
@@ -16,10 +19,12 @@ import {
 } from "@decky/api"
 
 import { useState, useEffect } from "react";
-import { BiTv, BiQr } from "react-icons/bi";
+import { GiCagedBall,GiOmega } from 'react-icons/gi'
+import { BiQr } from "react-icons/bi";
 import { AiFillGithub, AiFillHeart } from "react-icons/ai";
 
 import logo from "../assets/XIVOmegaLogo.png";
+import qrc from "../assets/qr_code.png";
 
 const onKill = async() => {call('stop_status')}
 
@@ -106,6 +111,7 @@ function Content() {
 					description={dynamicDesc(checkd,loading)}
 					checked={checkd}
 					disabled={loading}
+					icon={<GiOmega/>}
 					onChange={ async(e) => { onClick(e); }}
 			/>
 			</PanelSectionRow>
@@ -121,24 +127,34 @@ function Content() {
 					onClick={() => {
             		Navigation.NavigateToExternalWeb("https://github.com/shingonati0n/decky-plugin-xivomega");
 					}}>
-					<AiFillGithub/> GitHub Page
+					<AiFillGithub/> GitHub HomePage
 				</ButtonItem>
-				<ButtonItem 
-          			layout="inline"
-					bottomSeparator="none"
-					onClick={() => {
-            		Navigation.Navigate("../assets/qr_code.png");
-					}}>
-					<BiQr/>
-				</ButtonItem>
-				<ButtonItem
-          			layout="inline"
-					description="If this was useful, please consider donating :)"
+				<div style={{ display:"flex", flexDirection: "row", width: 300 }}>
+				<DialogButton
+					style={{ width:220 }}
 					onClick={() => {
             		Navigation.NavigateToExternalWeb("https://ko-fi.com/ugo_shingonati0n");
 					}}>
-					<AiFillHeart/> Donate
-				</ButtonItem>
+					<AiFillHeart/> Donate on ko-fi
+				</DialogButton>
+				<DialogButton
+					style={{ width: 50 }}
+					onClick={(e) => {
+						showContextMenu(
+							<Menu label="QR Code for ko-fi" cancelText="Go back" onCancel={() => {}}>
+								<div style={{display:"flex", justifyContent: "center"}} >
+									<img src={qrc} />
+								</div>
+							</Menu>,
+							e.currentTarget ?? window
+						)
+					}}>
+					<BiQr/>
+				</DialogButton>
+				</div>
+			<PanelSectionRow>
+				<div style={textStyle}>Any donation and support is greatly appreciated :D</div>	
+			</PanelSectionRow>
 			</PanelSectionRow>
 		</PanelSection>
 	);
@@ -149,7 +165,7 @@ export default definePlugin(() => {
 		name: "XivOmega",
 		title: <div className={staticClasses.Title}>XivOmega</div>,
 		content: <Content />,
-		icon: <BiTv />,
+		icon: <GiCagedBall />,
 		onDismount() {
 			onKill();
 		},

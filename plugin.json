@@ -4,8 +4,8 @@
   "flags": ["debug", "root"],
   "api_version": 1,
   "publish": {
-    "tags": ["final-fantasy-xiv","root"],
-    "description": "Latency Mitigator for the Critically Acclaimed MMORPG Final Fantasy XIV - based on XivAlexander.",
+    "tags": ["final-fantasy-xiv","XivMitmLatencyMitigator","XivOmega","XivAlexander","root"],
+    "description": "Latency Mitigator for the Critically Acclaimed MMORPG Final Fantasy XIV - based on XivMitmLatencyMitigator, XivAlexander and XivMitmDocker.",
     "image": "https://opengraph.githubassets.com/1/SteamDeckHomebrew/PluginLoader"
   }
 }
