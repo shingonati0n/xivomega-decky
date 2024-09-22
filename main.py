@@ -236,26 +236,26 @@ class Plugin:
 	# plugin that may remain on the system
 	async def _uninstall(self):
 		omegaWorker.WorkerClass.SelfDestructProtocol(roadsto14)
-		omegaWorker.WorkerClass.restorePodmanStorage(xivomega_storage)
+		omegaWorker.WorkerClass.restorePodmanStorage(xivomega_storage,pluginpath)
 		decky.logger.info("Goodbye World!")
 		pass
 
-	# Migrations that should be performed before entering `_main()`.
-	async def _migration(self):
-		decky.logger.info("Migrating")
-		# Here's a migration example for logs:
-		# - `~/.config/decky-template/template.log` will be migrated to `decky.DECKY_PLUGIN_LOG_DIR/template.log`
-		decky.migrate_logs(os.path.join(decky.DECKY_USER_HOME,
-											   ".config", "decky-template", "template.log"))
-		# Here's a migration example for settings:
-		# - `~/homebrew/settings/template.json` is migrated to `decky.DECKY_PLUGIN_SETTINGS_DIR/template.json`
-		# - `~/.config/decky-template/` all files and directories under this root are migrated to `decky.DECKY_PLUGIN_SETTINGS_DIR/`
-		decky.migrate_settings(
-			os.path.join(decky.DECKY_HOME, "settings", "template.json"),
-			os.path.join(decky.DECKY_USER_HOME, ".config", "decky-template"))
-		# Here's a migration example for runtime data:
-		# - `~/homebrew/template/` all files and directories under this root are migrated to `decky.DECKY_PLUGIN_RUNTIME_DIR/`
-		# - `~/.local/share/decky-template/` all files and directories under this root are migrated to `decky.DECKY_PLUGIN_RUNTIME_DIR/`
-		decky.migrate_runtime(
-			os.path.join(decky.DECKY_HOME, "template"),
-			os.path.join(decky.DECKY_USER_HOME, ".local", "share", "decky-template"))
+	# # Migrations that should be performed before entering `_main()`.
+	# async def _migration(self):
+	# 	decky.logger.info("Migrating")
+	# 	# Here's a migration example for logs:
+	# 	# - `~/.config/decky-template/template.log` will be migrated to `decky.DECKY_PLUGIN_LOG_DIR/template.log`
+	# 	decky.migrate_logs(os.path.join(decky.DECKY_USER_HOME,
+	# 										   ".config", "decky-template", "template.log"))
+	# 	# Here's a migration example for settings:
+	# 	# - `~/homebrew/settings/template.json` is migrated to `decky.DECKY_PLUGIN_SETTINGS_DIR/template.json`
+	# 	# - `~/.config/decky-template/` all files and directories under this root are migrated to `decky.DECKY_PLUGIN_SETTINGS_DIR/`
+	# 	decky.migrate_settings(
+	# 		os.path.join(decky.DECKY_HOME, "settings", "template.json"),
+	# 		os.path.join(decky.DECKY_USER_HOME, ".config", "decky-template"))
+	# 	# Here's a migration example for runtime data:
+	# 	# - `~/homebrew/template/` all files and directories under this root are migrated to `decky.DECKY_PLUGIN_RUNTIME_DIR/`
+	# 	# - `~/.local/share/decky-template/` all files and directories under this root are migrated to `decky.DECKY_PLUGIN_RUNTIME_DIR/`
+	# 	decky.migrate_runtime(
+	# 		os.path.join(decky.DECKY_HOME, "template"),
+	# 		os.path.join(decky.DECKY_USER_HOME, ".local", "share", "decky-template"))

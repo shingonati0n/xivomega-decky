@@ -118,31 +118,59 @@ class WorkerClass:
 		
 		with open(Path(runpath) / "storage_new.conf","w") as ffile:
 			ffile.write(nfile)
-
-		pushfix = f"cp {runpath}/storage_new.conf /etc/containers/storage.conf"
-		fpush = subprocess.run(shlex.split(pushfix),check=True,capture_output=True)
 		try:
+			pushfix = f"cp {runpath}/storage_new.conf /etc/containers/storage.conf"
+			fpush = subprocess.run(shlex.split(pushfix),check=True,capture_output=True)		
 			if fpush.returncode==0:
 				decky.logger.info("/etc/container/storage.conf has been patched")
 				decky.logger.info(f"podman image will be saved to {runpath}/storage")
 		except subprocess.CalledProcessError as e:
 			decky.logger.info(e.stderr.decode())
-
-	@staticmethod
-	def restorePodmanStorage(runpath):
-		podstorecmd = f"cp {runpath}/storage.conf.bak /etc/containers/storage.conf"
-		psf = subprocess.run(shlex.split(podstorecmd),check=True,capture_output=True)
+			#run podman reset to align with storage.conf
 		try:
-		   	if psf.returncode==0:
-		   		decky.logger.info("original /etc/containers/storage.conf has been restored")
+			psr = subprocess.run(shlex.split("podman system reset -f"),check=True,capture_output=True)
+			if psr.returncode==0:
+		   		decky.logger.info("podman has been reset to its initial state")
 		   		pass
 		except subprocess.CalledProcessError as e:
 			decky.logger.info(e.stderr.decode())
 			pass
+
+	@staticmethod
+	def restorePodmanStorage(runpath,pluginpath):
+		if os.path.isfile(os.path.join(runpath,"storage.conf.bak")):
+			podstorecmd = f"cp {runpath}/storage.conf.bak /etc/containers/storage.conf"
+			psf = subprocess.run(shlex.split(podstorecmd),check=True,capture_output=True)
+			try:
+			   	if psf.returncode==0:
+			   		decky.logger.info("original /etc/containers/storage.conf has been restored")
+			   		pass
+			except subprocess.CalledProcessError as e:
+				decky.logger.info(e.stderr.decode())
+				pass
+		else:
+			cpconf = f"cp {pluginpath}/podman_config/storage.conf /etc/containers/storage.conf"
+			try:
+				nconf = subprocess.run(shlex.split(cpconf),check=True,capture_output=True)
+				if nconf.returncode == 0:
+					decky.logger.info("storage.conf restored successfully in /etc/containers")
+			except subprocess.CalledProcessError as e:
+				decky.logger.info("Failure while restoring storage.conf in /etc/containers")
+				decky.logger.info(e.stderr.decode())
+		#perform podman system reset with -f option - to safely reset to a clean state
+		try:
+			psr = subprocess.run(shlex.split("podman system reset -f"),check=True,capture_output=True)
+			if psr.returncode==0:
+		   		decky.logger.info("podman has been reset to its initial state")
+		   		pass
+		except subprocess.CalledProcessError as e:
+			decky.logger.info(e.stderr.decode())
+			pass
+		#now remove the storage directory
 		try:
 			shutil.rmtree(os.path.join(runpath,"storage"))
 		except OSError as e:
-			decky.logger.info("Error: %s - %s." % (e.filename, e.strerror))
+			decky.logger.info(e.stderr.decode())
 			pass
 		try:
 			files = os.listdir(runpath)

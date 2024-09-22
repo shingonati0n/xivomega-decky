@@ -16,7 +16,7 @@ import {
 } from "@decky/api"
 
 import { useState, useEffect } from "react";
-import { BiTv } from "react-icons/bi";
+import { BiTv, BiQr } from "react-icons/bi";
 import { AiFillGithub, AiFillHeart } from "react-icons/ai";
 
 import logo from "../assets/XIVOmegaLogo.png";
@@ -123,8 +123,16 @@ function Content() {
 					}}>
 					<AiFillGithub/> GitHub Page
 				</ButtonItem>
+				<ButtonItem 
+          			layout="inline"
+					bottomSeparator="none"
+					onClick={() => {
+            		Navigation.Navigate("../assets/qr_code.png");
+					}}>
+					<BiQr/>
+				</ButtonItem>
 				<ButtonItem
-          			layout="below"
+          			layout="inline"
 					description="If this was useful, please consider donating :)"
 					onClick={() => {
             		Navigation.NavigateToExternalWeb("https://ko-fi.com/ugo_shingonati0n");
