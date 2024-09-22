@@ -1,4 +1,3 @@
-#from Plugin
 from pathlib import Path
 import subprocess
 import sys
@@ -9,10 +8,8 @@ import decky
 import socket
 import ipaddress
 import struct
-import shlex
-import time 
+import shlex 
 import io
-import configparser
 from subprocess import Popen, PIPE, STDOUT, CalledProcessError
 from getpass import getpass
 import pdb
@@ -26,12 +23,15 @@ from lib import omegaWorker
 thisusr = decky.USER
 thisusrhome = decky.DECKY_USER_HOME
 xivomega_storage = decky.DECKY_PLUGIN_RUNTIME_DIR
+pluginpath = decky.DECKY_PLUGIN_DIR
 
 class ConnectionFailedError(Exception):
-	#decky.logger.info("Connection could not be established, try again")
 	pass
 
 class InvalidIPException(Exception):
+	pass
+
+class StorageConfSetupError(Exception):
 	pass
 
 #static stuff
@@ -55,13 +55,13 @@ def cidr_to_netmask(cidr):
 def is_valid_ipv4_address(address):
 	try:
 		socket.inet_pton(socket.AF_INET, address)
-	except AttributeError:  # no inet_pton here, sorry
+	except AttributeError:  
 		try:
 			socket.inet_aton(address)
 		except socket.error:
 			return False
 		return address.count('.') == 3
-	except socket.error:  # not a valid address
+	except socket.error: 
 		return False
 	return True
 
@@ -143,10 +143,7 @@ class Plugin:
 				if Plugin._enabled:
 					await decky.emit("turnToggleOff")
 					decky.logger.info("XIVOmega is enabled")
-					#check if running and if not then start
 					isRunning = omegaWorker.WorkerClass.isRunning()
-					#decky.logger.info("Is xivomega up??: " + str(isRunning)) 
-					#await decky.emit("turnToggleOff")
 					if isRunning == False:
 						decky.logger.info("Activation signal received, starting new container and network config")
 						netw = networkSetup(self)
@@ -197,11 +194,16 @@ class Plugin:
 		omegaWorker.WorkerClass.SelfCleaningProtocol()
 		# check if podman storage is patched
 		decky.logger.info(xivomega_storage)
-		if not os.path.isfile(Path(xivomega_storage) / "storage.conf.bak"):
-			omegaWorker.WorkerClass().fixPodmanStorage(xivomega_storage)
-			decky.logger.info("Initiating storage.conf patching process")
+		confCheck = omegaWorker.WorkerClass.checkPodmanConf(pluginpath)
+		if confCheck >= 0: 
+			storageCheck = omegaWorker.WorkerClass.checkPodmanStorage()
+			if storageCheck:
+				decky.logger.info("Initiating storage.conf patching process")
+				omegaWorker.WorkerClass().fixPodmanStorage(xivomega_storage)
+		else:
+			raise StorageConfSetupError
 		#network preparations
-		#get IP address with cidr from wlan0 only - eth0 en ens* not supported yet
+		#get IP address with cidr from wlan0 only - eth0 and ens* connections not supported yet
 		netw = networkSetup(self)
 		decky.logger.info("Starting main program")
 		decky.logger.info(f"Host IPVlan IP: " + str(netw["vip"]))
@@ -217,20 +219,24 @@ class Plugin:
 			pass
 		except ConnectionFailedError:
 			decky.logger.info("Connection Failed")
-			pass
+			await decky.emit("connectionErrPrompt")
+		except StorageConfSetupError:
+			decky.logger.info("Storage.conf file could not be copied.")
+			await decky.emit("storageConfErrPromt")
 
-		# Function called first during the unload process, utilize this to handle your plugin being stopped, but not
+	# Function called first during the unload process, utilize this to handle your plugin being stopped, but not
 	# completely removed
 	async def _unload(self):
 		Plugin.stop_status(self)
 		omegaWorker.WorkerClass.SelfDestructProtocol(roadsto14)
-		omegaWorker.WorkerClass.restorePodmanStorage(xivomega_storage)
 		decky.logger.info("Goodnight World!")
 		pass
 
 	# Function called after `_unload` during uninstall, utilize this to clean up processes and other remnants of your
 	# plugin that may remain on the system
 	async def _uninstall(self):
+		omegaWorker.WorkerClass.SelfDestructProtocol(roadsto14)
+		omegaWorker.WorkerClass.restorePodmanStorage(xivomega_storage)
 		decky.logger.info("Goodbye World!")
 		pass
 

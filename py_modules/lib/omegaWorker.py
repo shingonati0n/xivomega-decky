@@ -6,8 +6,8 @@ import os
 import decky
 #from original program
 import socket
-import ipaddress
 import struct
+import shutil
 import shlex
 import io
 from subprocess import Popen, PIPE, CalledProcessError, STDOUT
@@ -67,6 +67,36 @@ class WorkerClass:
 			print(e.stderr.decode())
 	
 	@staticmethod
+	def checkPodmanStorage():
+		defpath = 'graphroot = "/var/lib/containers/storage"'
+		with open('/etc/containers/storage.conf') as f:
+			if defpath in f.read():
+				decky.logger.info("Default container storage detected - patching now")
+				vrdict = True
+			else:
+				vrdict = False
+		return vrdict
+
+	@staticmethod
+	def checkPodmanConf(pluginpath):
+		if os.path.isfile('/etc/containers/storage.conf'):
+			decky.logger.info("/etc/containers/storage.conf detected")
+			vrdict = 1
+		else:
+			decky.logger.info("/etc/containers/storage.conf not detected - Creating now")
+			cpconf = f"cp {pluginpath}/podman_config/storage.conf /etc/containers/storage.conf"
+			try:
+				nconf = subprocess.run(shlex.spit(cpconf),check=True,capture_output=True)
+				if nconf.returncode == 0:
+					decky.logger.info("storage.conf created successfully in /etc/containers")
+					vrdict = 0
+			except subprocess.CalledProcessError as e:
+				decky.logger.info("Failure while creating storage.conf in /etc/containers")
+				decky.logger.info(e.stderr.decode())
+				verdict = -1
+		return vrdict
+
+	@staticmethod
 	def fixPodmanStorage(runpath):
 		podstorecmd = f"cp /etc/containers/storage.conf {runpath}/storage.conf.bak"
 		psf = subprocess.run(shlex.split(podstorecmd),check=True,capture_output=True)
@@ -78,7 +108,7 @@ class WorkerClass:
 			decky.logger.info(e.stderr.decode())
 		
 		search_text = 'graphroot = "/var/lib/containers/storage"'
-		new_text = f'graphroot = "{runpath}"'
+		new_text = f'graphroot = "{runpath}/storage"'
 		decky.logger.info(search_text)
 		decky.logger.info(new_text)
 
@@ -94,7 +124,7 @@ class WorkerClass:
 		try:
 			if fpush.returncode==0:
 				decky.logger.info("/etc/container/storage.conf has been patched")
-				decky.logger.info(f"podman image will be saved to {runpath}")
+				decky.logger.info(f"podman image will be saved to {runpath}/storage")
 		except subprocess.CalledProcessError as e:
 			decky.logger.info(e.stderr.decode())
 
@@ -108,8 +138,25 @@ class WorkerClass:
 		   		pass
 		except subprocess.CalledProcessError as e:
 			decky.logger.info(e.stderr.decode())
-
-
+			pass
+		try:
+			shutil.rmtree(os.path.join(runpath,"storage"))
+		except OSError as e:
+			decky.logger.info("Error: %s - %s." % (e.filename, e.strerror))
+			pass
+		try:
+			files = os.listdir(runpath)
+			decky.logger.info(files)
+			for file in files:
+				file_path = os.path.join(runpath, file)
+				if os.path.isfile(file_path):
+					os.remove(file_path)
+			decky.logger.info(f"All files from {runpath} have been deleted.")
+			decky.logger.info("Thanks for using this plugin!  Hope to see you again next time.")
+		except OSError as e:
+			decky.logger.info(f"Error occurred while deleting files from {runpath}")
+			pass
+			
 	@staticmethod
 	def SetRoutes(rt14):
 		for r in rt14:
@@ -333,47 +380,6 @@ class WorkerClass:
 			decky.logger.info(e.stderr.decode())
 		try:
 			sworld = subprocess.run(shlex.split("podman stop xivomega"),check=True,capture_output=True)
-			if sworld.returncode == 0:
-				decky.logger.info("podman stopped successfully")
-		except subprocess.CalledProcessError as e:
-			pass
-			decky.logger.info(e.stderr.decode())
-
-#testMethods - these will be static
-	@staticmethod
-	def testStart():
-		try:
-			tworld = subprocess.run(shlex.split("podman start xivtest"),check=True,capture_output=True)
-			if tworld.returncode == 0:
-				decky.logger.info("podman started successfully")
-				decky.logger.info(tworld.stdout.decode())
-		except subprocess.CalledProcessError as e:
-			pass
-			decky.logger.info(e.stderr.decode())
-	@staticmethod					
-	def podmanInfo():
-		try:
-			pworld = subprocess.run(shlex.split("podman container ls -a"),check=True,capture_output=True)
-			nworld = subprocess.run(shlex.split("podman inspect xivtest"),check=True,capture_output=True)
-			if pworld.returncode == 0:
-				decky.logger.info(pworld.stdout.decode())
-			if nworld.returncode == 0:
-				decky.logger.info(nworld.stdout.decode())
-		except subprocess.CalledProcessError as e:
-			pass
-			decky.logger.info(e.stderr.decode())
-
-	@staticmethod
-	def testStop():
-		try:
-			tworld = subprocess.run(shlex.split("podman kill --signal INT xivtest"),check=True,capture_output=True)
-			if tworld.returncode == 0:
-				decky.logger.info("podman execution halted")
-		except subprocess.CalledProcessError as e:
-			pass
-			decky.logger.info(e.stderr.decode())
-		try:
-			sworld = subprocess.run(shlex.split("podman stop xivtest"),check=True,capture_output=True)
 			if sworld.returncode == 0:
 				decky.logger.info("podman stopped successfully")
 		except subprocess.CalledProcessError as e:
