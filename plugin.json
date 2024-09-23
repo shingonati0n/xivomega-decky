@@ -1,7 +1,7 @@
 {
   "name": "XIVOmega",
-  "author": "Hugo Muñoz",
-  "flags": ["debug", "root"],
+  "author": "shingonati0n",
+  "flags": ["root"],
   "api_version": 1,
   "publish": {
     "tags": ["final-fantasy-xiv","XivMitmLatencyMitigator","XivOmega","XivAlexander","root"],

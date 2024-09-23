@@ -8,7 +8,7 @@ import {
 	Navigation,
 	showContextMenu,
 	Menu,
-	DialogButton
+	MenuItem
 } from "@decky/ui";
 
 import {
@@ -20,7 +20,6 @@ import {
 
 import { useState, useEffect } from "react";
 import { GiCagedBall,GiOmega } from 'react-icons/gi'
-import { BiQr } from "react-icons/bi";
 import { AiFillGithub, AiFillHeart } from "react-icons/ai";
 
 import logo from "../assets/XIVOmegaLogo.png";
@@ -129,32 +128,22 @@ function Content() {
 					}}>
 					<AiFillGithub/> GitHub HomePage
 				</ButtonItem>
-				<div style={{ display:"flex", flexDirection: "row", width: 300 }}>
-				<DialogButton
-					style={{ width:220 }}
-					onClick={() => {
-            		Navigation.NavigateToExternalWeb("https://ko-fi.com/ugo_shingonati0n");
-					}}>
-					<AiFillHeart/> Donate on ko-fi
-				</DialogButton>
-				<DialogButton
-					style={{ width: 50 }}
+				<ButtonItem
+					description="Any donation and support is greatly appreciated :D"
+					layout="below"
 					onClick={(e) => {
 						showContextMenu(
 							<Menu label="QR Code for ko-fi" cancelText="Go back" onCancel={() => {}}>
 								<div style={{display:"flex", justifyContent: "center"}} >
 									<img src={qrc} />
 								</div>
+								<MenuItem onSelected={() => {Navigation.NavigateToExternalWeb("https://ko-fi.com/ugo_shingonati0n");}}>Visit ko-fi Page</MenuItem>
 							</Menu>,
 							e.currentTarget ?? window
 						)
 					}}>
-					<BiQr/>
-				</DialogButton>
-				</div>
-			<PanelSectionRow>
-				<div style={textStyle}>Any donation and support is greatly appreciated :D</div>	
-			</PanelSectionRow>
+					<AiFillHeart/> Donate on ko-fi
+				</ButtonItem>
 			</PanelSectionRow>
 		</PanelSection>
 	);
