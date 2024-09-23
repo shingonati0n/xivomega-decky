@@ -6,6 +6,6 @@
   "publish": {
     "tags": ["final-fantasy-xiv","XivMitmLatencyMitigator","XivOmega","XivAlexander","root"],
     "description": "Latency Mitigator for the Critically Acclaimed MMORPG Final Fantasy XIV - based on XivMitmLatencyMitigator, XivAlexander and XivMitmDocker.",
-    "image": "https://opengraph.githubassets.com/1/SteamDeckHomebrew/PluginLoader"
+    "image": "https://raw.githubusercontent.com/shingonati0n/decky-plugin-xivomega/refs/heads/main/assets/thumbnail.jpg"
   }
 }
