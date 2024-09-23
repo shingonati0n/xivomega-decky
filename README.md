@@ -1,6 +1,14 @@
+![XIVOmegaHeader](https://github.com/user-attachments/assets/eea8545d-8ca2-4ad1-a552-d2e2c5db4d6d)
+
 # XIVOmega - Decky Version
 
 A Steam Deck Plugin (for Decky Loader) to mitigate latency on the Critically Acclaimed MMORPG Final Fantasy XIV. This plugin is the evolution of [xivomega](https://github.com/shingonati0n/xivomega) which in turn is based on XivMitmLatencyMitigator, XivMitmDocker and XivAlexander. 
+
+![20240923184221_1](https://github.com/user-attachments/assets/4eeb8fee-b518-48a2-8181-a1d8a7a01645)
+
+![20240923184205_1](https://github.com/user-attachments/assets/10fd54c9-e524-460d-bb09-53b7ee17e79f)
+
+![20240923183757_1](https://github.com/user-attachments/assets/d655d426-02ac-4168-8f22-5a3f02128fbd)
 
 ### Installation
 
