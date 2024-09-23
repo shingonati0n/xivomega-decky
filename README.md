@@ -6,10 +6,6 @@ A Steam Deck Plugin (for Decky Loader) to mitigate latency on the Critically Acc
 
 ![20240923184221_1](https://github.com/user-attachments/assets/4eeb8fee-b518-48a2-8181-a1d8a7a01645)
 
-![20240923184205_1](https://github.com/user-attachments/assets/10fd54c9-e524-460d-bb09-53b7ee17e79f)
-
-![20240923183757_1](https://github.com/user-attachments/assets/d655d426-02ac-4168-8f22-5a3f02128fbd)
-
 ### Installation
 
 **(The following steps are to install the prerelease version of this plugin. The end state will be to install via Decky Loader Store).** 
