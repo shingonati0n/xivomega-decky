@@ -10,7 +10,7 @@
     },
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/shingonati0n/decky-plugin-xivomega.git"
+        "url": "git+https://github.com/shingonati0n/xivomega-decky.git"
     },
     "keywords": [
     "decky",
@@ -22,9 +22,9 @@
     "author": "Hugo Munoz <hsmunozc@gmail.com>",
     "license": "BSD-3-Clause",
     "bugs": {
-        "url": "https://github.com/shingonati0n/decky-plugin-xivomega/issues"
+        "url": "https://github.com/shingonati0n/xivomega-decky/issues"
     },
-    "homepage": "https://github.com/shingonati0n/decky-plugin-xivomega#readme",
+    "homepage": "https://github.com/shingonati0n/xivomega-decky#readme",
     "devDependencies": {
       "@decky/rollup": "^1.0.0",
       "@types/react": "18.3.3",
