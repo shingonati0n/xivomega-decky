@@ -32,6 +32,7 @@ function Content() {
 	const [loading,setLoading] = useState<boolean>(false);
 	const [storagep,setStoragep] = useState<boolean>(false);
 	const [ctx,setCtx] = useState<boolean>(false);
+	const [wlan,setWlan] = useState<boolean>(false);
 	const textStyle = {fontSize: "11px"};
 
 
@@ -49,6 +50,10 @@ function Content() {
 
 	function connError() {
 		setCtx(true);
+	}
+
+	function wlanError() {
+		setWlan(true);
 	}
 
 	function dynamicDesc(c:boolean, l:boolean):string {
@@ -82,11 +87,13 @@ function Content() {
 		addEventListener('turnToggleOn',enableToggle);
 		addEventListener('storageConfErrPrompt',storageConfError);
 		addEventListener('connectionErrPrompt',connError);
+		addEventListener('wlan0ConnError',wlanError);
 	return() => {
 		removeEventListener('turnToggleOff',disableToggle);
 		removeEventListener('turnToggleOn',enableToggle);
 		removeEventListener('storageConfErrPrompt',storageConfError);
 		removeEventListener('connectionErrPrompt',connError);
+		removeEventListener('wlan0ConnError',wlanError);
 		}
 	},[]);
 
@@ -118,6 +125,7 @@ function Content() {
 			{checkd && loading && (<PanelSectionRow><div style={textStyle}>Please wait...<Spinner width="11" height="11"/></div></PanelSectionRow>)}
 			{storagep && (<PanelSectionRow><div style={textStyle}><b>ERROR: storage.conf couldn't be created in /etc/containers. Please reload plugin from Decky Menu and try again.</b></div></PanelSectionRow>)}
 			{ctx && (<PanelSectionRow><div style={textStyle}><b>ERROR: Connection to the game servers couldn't be established. Please reload plugin from Decky Menu and try again.</b></div></PanelSectionRow>)}
+			{wlan && (<PanelSectionRow><div style={textStyle}><b>ERROR: Wifi device wlan0 couldn't be found. Please reload plugin from Decky Menu and try again.</b></div></PanelSectionRow>)}
 			{!checkd && !loading && (<div></div>)}
 			{!checkd && loading && (<PanelSectionRow><div style={textStyle}>Please wait...<Spinner width="11" height="11"/></div></PanelSectionRow>)}			
 			<PanelSectionRow>

@@ -31,6 +31,9 @@ class ConnectionFailedError(Exception):
 class InvalidIPException(Exception):
 	pass
 
+class WifiNotOnError(Exception):
+	pass
+
 class StorageConfSetupError(Exception):
 	pass
 
@@ -204,11 +207,17 @@ class Plugin:
 			raise StorageConfSetupError
 		#network preparations
 		#get IP address with cidr from wlan0 only - eth0 and ens* connections not supported yet
-		netw = networkSetup(self)
-		decky.logger.info("Starting main program")
-		decky.logger.info(f"Host IPVlan IP: " + str(netw["vip"]))
-		decky.logger.info(f"Podman IPVlan IP: " + str(netw["lip"]))
-		decky.logger.info(f"Gateway IP: " + str(netw["fip"]))
+		#wait for 15 seconds before scanning for IP - 
+		await asyncio.sleep(15)
+		try:
+			netw = networkSetup(self)
+			decky.logger.info("Starting main program")
+			decky.logger.info(f"Host IPVlan IP: " + str(netw["vip"]))
+			decky.logger.info(f"Podman IPVlan IP: " + str(netw["lip"]))
+			decky.logger.info(f"Gateway IP: " + str(netw["fip"]))
+		except IndexError:
+			decky.logger.info("wlan0 couldn't be found connected")
+			await decky.emit("wlan0ConnError")
 		#main loop
 		try:
 			loop = asyncio.get_event_loop()

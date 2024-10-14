@@ -20,9 +20,10 @@ A Steam Deck Plugin (for Decky Loader) to mitigate latency on the Critically Acc
 - **The plugin applies a fix in order to use Podman:** By default, any image downloaded with podman gets save to /var/lib/containers/storage. When trying to run a container using the default location, it will error out indicating there is not sufficient space. The plugin fixes this by setting the storage location to the runtime folder of itself (homebrew/data/XIVOmega) via a storage.conf file which gets created into /etc/containers.
 
 - The podman image used is pulled from here: https://quay.io/repository/shingonati0n/xivomega. This container runs Debian with the following contents:
-   - a script to set up iptables POSTFORWARDING rule (iptset.sh)
-   - a script which calls the mitigator as in XivMitmLatencyMitigator. 
+   - a script to set up iptables POSTROUTING rule (iptset.sh)
+   - a script which calls the mitigator as in XivMitmLatencyMitigator (omega_alpha.sh). 
 
+- 2 ipvlan adapters get created - one for podman and one native for linux. These get automatically assigned the last 2 ip addresses for the network host is connected to. In the future, this will customizable. 
 - The game traffic is routed thru this container, which effectively mitigates latency. This translates into less GCD clipping - **the same effect as using XivAlexander**. 
 - The container and the networking set up are ephemeral - when the mitigator is toggled off, everything is removed seamlessly and can be activated again smoothly. 
 - The opcodes file which gets changed each time a new game patch releases gets updated along with XivAlexander and XivMitmLatencyMitigator. 
