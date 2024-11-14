@@ -8,6 +8,9 @@ A Steam Deck Plugin (for Decky Loader) to mitigate latency on the Critically Acc
 
 ### Installation
 
+- The plugin is now available in the Decky Testing Store - from Decky, go into Options > General and on Store Channel change to "Testing"
+- Select XIVOmega and install
+
 **(The following steps are to install the prerelease version of this plugin. The end state will be to install via Decky Loader Store).** 
 
 - Download the zip file in the releases page. Note this is a prerelease version. 
