@@ -11,8 +11,33 @@ import shutil
 import shlex
 import io
 from subprocess import Popen, PIPE, CalledProcessError, STDOUT
+import gi
+gi.require_version("NM", "1.0")
+from gi.repository import GLib, NM
+
 
 class WorkerClass:
+	#get current network device name by priority, this solves for when cable is connected
+	@staticmethod
+	def get_current_device():
+		client = NM.Client.new(None)
+		devices = client.get_devices()
+		netdevices = {}
+		curr_netd = ""
+
+		for device in devices:
+		    netdevices[device.get_iface()] = device.get_type_description() + ";" + device.get_state().value_nick
+
+	#priority is ethernet first, then wifi
+		for netd, netdet in netdevices.items():
+			netd_type, netd_state = netdet.split(";")
+			if netd_type in ("ethernet") and netd_state in ("activated"):
+				return netd #ethernet = enp0s*
+			elif netd_type in ("wifi") and netd_state in ("activated"):
+				return netd #wifi = wlan* or wlp*
+
+		return curr_netd #you get nothing, you lose, good day, sir!
+
 	@staticmethod
 	def SelfCreateProtocol(lip):
 		omegapod = f"""podman create \
@@ -47,7 +72,8 @@ class WorkerClass:
 
 	@staticmethod
 	def createIpVlanC(sdsubn,sdgway):
-		podnet = f"podman network create --subnet={sdsubn} --gateway={sdgway} --driver=ipvlan -o parent=wlan0 xivlanc"
+		adapter = WorkerClass.get_current_device()
+		podnet = f"podman network create --subnet={sdsubn} --gateway={sdgway} --driver=ipvlan -o parent={adapter} xivlanc"
 		try:
 			xivnet = subprocess.run(shlex.split(podnet),check=True,capture_output=True)
 			if xivnet.returncode == 0:
@@ -205,7 +231,8 @@ class WorkerClass:
 
 	@staticmethod
 	def CreateHostAdapter(virtual_ip,netbits,broadcast):
-		ipvl1 = f"ip link add xivlanh link wlan0 type ipvlan mode l2"
+		adapter = WorkerClass.get_current_device()
+		ipvl1 = f"ip link add xivlanh link {adapter} type ipvlan mode l2"
 		ipvl2 = f"ip addr add {virtual_ip}/{netbits} brd {broadcast} dev xivlanh"
 		ipvl3 = f"ip link set xivlanh up"
 		try:

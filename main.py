@@ -14,11 +14,13 @@ from subprocess import Popen, PIPE, STDOUT, CalledProcessError
 from getpass import getpass
 import pdb
 import traceback
-
+import random
+from random import sample
 #append py_modules to PYTHONPATH
 sys.path.append(str(Path(__file__).parent / "py_modules"))
 
 from lib import omegaWorker
+from scapy.all import ARP, Ether, srp
 
 thisusr = decky.USER
 thisusrhome = decky.DECKY_USER_HOME
@@ -68,6 +70,50 @@ def is_valid_ipv4_address(address):
 		return False
 	return True
 
+#scapy methods to get network info - get all IPs in use
+def scan(ip):
+	arp_request = Ether(dst="ff:ff:ff:ff:ff:ff") / ARP(pdst=ip)
+	result = srp(arp_request, timeout=1, verbose=False)[0]
+	devices = [{'ip': received.psrc, 'mac': received.hwsrc} for sent, received in result]
+	return devices
+
+def get_device_names(devices):
+	device_names = []
+	for device in devices:
+		try:
+			host_name, _, _ = socket.gethostbyaddr(device['ip'])
+			device_names.append({'ip': device['ip'], 'mac': device['mac'], 'name': host_name})
+		except socket.herror:
+		   
+			device_names.append({'ip': device['ip'], 'mac': device['mac'], 'name': 'Unknown'})
+	return device_names
+
+def get_vip_lip(ipaddr,subnaddr):
+	ips = []
+	target_ip = ipaddr
+	devices_list = scan(target_ip)
+	for device in devices_list:
+		for k,v in device.items():
+			if k in 'ip':
+				ips.append(device[k])
+	devices_with_names = get_device_names(devices_list)
+	
+	decky.logger.info("IPs in use:")
+	for uip in ips:
+		decky.logger.info(uip)
+	allip = [str(ip) for ip in ipaddress.IPv4Network(subnaddr)]
+	useable_ip = allip[3:-2]
+	# Removing elements present in other list
+	# using list comprehension
+	res = [i for i in useable_ip if i not in ips]
+	decky.logger.info("Chosen IPs:")
+	vip, lip = sample(res,2)
+	decky.logger.info(f"VlanIP: {vip}")
+	decky.logger.info(f"Last IP: {lip}")
+	return vip, lip
+
+#end of scapy methods
+
 def establishConnection(self,rt14)->int:
 	ctx = 1
 	decky.logger.info("Establishing network connection...")
@@ -93,15 +139,19 @@ def establishConnection(self,rt14)->int:
 
 def networkSetup(self):
 	netwElems = {}
-	ipv4 = os.popen('ip addr show wlan0').read().split("inet ")[1].split(" brd")[0] 
+	this_dev = omegaWorker.WorkerClass().get_current_device()
+	decky.logger.info(f"Device under use: {this_dev}")
+	ipv4 = os.popen('ip addr show ' + this_dev).read().split("inet ")[1].split(" brd")[0] 
 	ipv4n, netb = ipv4.split('/')
 	subn = ipaddress.ip_network(cidr_to_netmask(ipv4)[0]+'/'+cidr_to_netmask(ipv4)[1], strict=False)
 	sdgway = '.'.join(ipv4n.split('.')[:3]) + ".1"
 	sdsubn = str(subn.network_address) + "/" + netb
 	nt = ipaddress.IPv4Network(sdsubn)
+	#get vip and lip frpm random method - this way no config is needed
 	fip = str(nt[1])
-	vip = str(nt[-4])
-	lip = str(nt[-3])
+	#vip = str(nt[-4])
+	#lip = str(nt[-3])
+	vip, lip = get_vip_lip(ipv4n,sdsubn)
 	brd = str(nt.broadcast_address)
 	netwElems["ipv4"] = ipv4
 	netwElems["ipv4n"] = ipv4n
@@ -212,6 +262,7 @@ class Plugin:
 		try:
 			netw = networkSetup(self)
 			decky.logger.info("Starting main program")
+			decky.logger.info(f"Network Interface in use: " + omegaWorker.WorkerClass().get_current_device())
 			decky.logger.info(f"Host IPVlan IP: " + str(netw["vip"]))
 			decky.logger.info(f"Podman IPVlan IP: " + str(netw["lip"]))
 			decky.logger.info(f"Gateway IP: " + str(netw["fip"]))
