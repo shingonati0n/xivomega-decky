@@ -18,9 +18,11 @@ import {
 	definePlugin,
 } from "@decky/api"
 
-import { useState, useEffect } from "react";
+import { useLocalStorage } from "./useLocalStorage";
+import { useEffect } from "react";
 import { GiCagedBall,GiOmega } from 'react-icons/gi'
 import { AiFillGithub, AiFillHeart } from "react-icons/ai";
+
 
 import logo from "../assets/XIVOmegaLogo.png";
 import qrc from "../assets/qr_code.png";
@@ -28,13 +30,13 @@ import qrc from "../assets/qr_code.png";
 const onKill = async() => {call('stop_status')}
 
 function Content() {
-	const [checkd, setCheckd] = useState<boolean>(false);
-	const [loading,setLoading] = useState<boolean>(false);
-	const [storagep,setStoragep] = useState<boolean>(false);
-	const [ctx,setCtx] = useState<boolean>(false);
-	const [wlan,setWlan] = useState<boolean>(false);
-	const [thisIp,setCurrIp] = useState("");
 	const textStyle = {fontSize: "11px"};
+	const [checkd, setCheckd] = useLocalStorage("checkd",false);
+	const [loading,setLoading] = useLocalStorage("loading",false);
+	const [storagep,setStoragep] = useLocalStorage("storagep",false);
+	const [ctx,setCtx] = useLocalStorage("ctx",false);
+	const [wlan,setWlan] = useLocalStorage("wlan",false);
+	const [thisIp,setCurrIp] = useLocalStorage("thisIp","");
 
 
 	function enableToggle() {
@@ -111,20 +113,6 @@ function Content() {
 	}
 	useEffect(() => {
 			initState();
-			addEventListener('turnToggleOff',disableToggle);
-			addEventListener('turnToggleOn',enableToggle);
-			addEventListener('storageConfErrPrompt',storageConfError);
-			addEventListener('connectionErrPrompt',connError);
-			addEventListener('wlan0ConnError',wlanError);
-			addEventListener('Vlan_IP',displayIP);
-		return() => {
-			removeEventListener('turnToggleOff',disableToggle);
-			removeEventListener('turnToggleOn',enableToggle);
-			removeEventListener('storageConfErrPrompt',storageConfError);
-			removeEventListener('connectionErrPrompt',connError);
-			removeEventListener('wlan0ConnError',wlanError);
-			removeEventListener('Vlan_IP',displayIP);
-			}
 	}, []);
 	return (
 		<PanelSection>

@@ -40,12 +40,33 @@ class StorageConfSetupError(Exception):
 	pass
 
 #static stuff
-roadsto14 = [
+
+CNroads = [
+	"109.244.0.0/16",
+	"27.221.0.0/16",
+	"119.97.0.0/16",
+	"162.14.0.0/16"]
+
+JProads = [
+	"119.252.36.0/24",
+	"119.252.37.0/24",
+	"153.254.80.0/24",
+	"204.2.29.0/24", 
+	"80.239.145.0/24"]
+
+KRroads = ["183.111.189.0/24"]
+
+NNroads = ["124.150.157.0/24","202.67.52.0/24"]
+
+legacyroads = [
 	"124.150.157.0/24",
 	"153.254.80.0/24",
 	"202.67.52.0/24",
 	"204.2.29.0/24",
 	"80.239.145.0/24"]
+
+
+roadsto14 = legacyroads
 
 #fix etc/containers/storage.conf to avoid podman no space left issue
 
