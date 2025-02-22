@@ -33,6 +33,7 @@ function Content() {
 	const [storagep,setStoragep] = useState<boolean>(false);
 	const [ctx,setCtx] = useState<boolean>(false);
 	const [wlan,setWlan] = useState<boolean>(false);
+	const [thisIp,setCurrIp] = useState("");
 	const textStyle = {fontSize: "11px"};
 
 
@@ -46,15 +47,20 @@ function Content() {
 
 	function storageConfError() {
 		setStoragep(true);
-	}
+	};
 
 	function connError() {
 		setCtx(true);
-	}
+	};
 
 	function wlanError() {
 		setWlan(true);
-	}
+	};
+
+	//Display current Deck IP
+	function displayIP(currIP: string) {
+		setCurrIp(currIP);
+	};
 
 	function dynamicDesc(c:boolean, l:boolean):string {
 		let desc = ""
@@ -88,12 +94,14 @@ function Content() {
 		addEventListener('storageConfErrPrompt',storageConfError);
 		addEventListener('connectionErrPrompt',connError);
 		addEventListener('wlan0ConnError',wlanError);
+		addEventListener('Vlan_IP',displayIP);
 	return() => {
 		removeEventListener('turnToggleOff',disableToggle);
 		removeEventListener('turnToggleOn',enableToggle);
 		removeEventListener('storageConfErrPrompt',storageConfError);
 		removeEventListener('connectionErrPrompt',connError);
 		removeEventListener('wlan0ConnError',wlanError);
+		removeEventListener('Vlan_IP',displayIP);
 		}
 	},[]);
 
@@ -103,6 +111,20 @@ function Content() {
 	}
 	useEffect(() => {
 			initState();
+			addEventListener('turnToggleOff',disableToggle);
+			addEventListener('turnToggleOn',enableToggle);
+			addEventListener('storageConfErrPrompt',storageConfError);
+			addEventListener('connectionErrPrompt',connError);
+			addEventListener('wlan0ConnError',wlanError);
+			addEventListener('Vlan_IP',displayIP);
+		return() => {
+			removeEventListener('turnToggleOff',disableToggle);
+			removeEventListener('turnToggleOn',enableToggle);
+			removeEventListener('storageConfErrPrompt',storageConfError);
+			removeEventListener('connectionErrPrompt',connError);
+			removeEventListener('wlan0ConnError',wlanError);
+			removeEventListener('Vlan_IP',displayIP);
+			}
 	}, []);
 	return (
 		<PanelSection>
@@ -121,7 +143,7 @@ function Content() {
 					onChange={ async(e) => { onClick(e); }}
 			/>
 			</PanelSectionRow>
-			{checkd && !loading && (<div></div>)}
+			{checkd && !loading && (<PanelSectionRow><div style={textStyle}>Steam Deck current IP: {thisIp} </div></PanelSectionRow>)}
 			{checkd && loading && (<PanelSectionRow><div style={textStyle}>Please wait...<Spinner width="11" height="11"/></div></PanelSectionRow>)}
 			{storagep && (<PanelSectionRow><div style={textStyle}><b>ERROR: storage.conf couldn't be created in /etc/containers. Please reload plugin from Decky Menu and try again.</b></div></PanelSectionRow>)}
 			{ctx && (<PanelSectionRow><div style={textStyle}><b>ERROR: Connection to the game servers couldn't be established. Please reload plugin from Decky Menu and try again.</b></div></PanelSectionRow>)}

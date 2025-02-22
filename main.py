@@ -214,6 +214,7 @@ class Plugin:
 						while True:
 							try:
 								if Plugin._enabled:
+									await decky.emit("Vlan_IP",str(netw["vip"]))
 									ln = await asyncio.wait_for(xivomega.stdout.readline(),1)
 									if ln:
 										decky.logger.info(ln.decode('utf-8').strip())
@@ -266,6 +267,8 @@ class Plugin:
 			decky.logger.info(f"Host IPVlan IP: " + str(netw["vip"]))
 			decky.logger.info(f"Podman IPVlan IP: " + str(netw["lip"]))
 			decky.logger.info(f"Gateway IP: " + str(netw["fip"]))
+			#send IPVlan host info to the UI - this will be the new Deck IP while the plugin is in use
+			await decky.emit("Vlan_IP",str(netw["vip"]))
 		except IndexError:
 			decky.logger.info("wlan0 couldn't be found connected")
 			await decky.emit("wlan0ConnError")
