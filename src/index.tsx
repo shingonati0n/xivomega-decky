@@ -27,7 +27,7 @@ import { AiFillGithub, AiFillHeart } from "react-icons/ai";
 import logo from "../assets/XIVOmegaLogo.png";
 import qrc from "../assets/qr_code.png";
 
-const onKill = async() => {call('stop_status')}
+const onKill = async() => {call('stop_status');localStorage.clear();}
 
 function Content() {
 	const textStyle = {fontSize: "11px"};
@@ -64,6 +64,20 @@ function Content() {
 		setCurrIp(currIP);
 	};
 
+	//clean localStorage once connection has been estalished
+	function clearStorage() {
+		localStorage.removeItem("checkd");
+		localStorage.removeItem("loading");
+		localStorage.removeItem("storagep");
+		localStorage.removeItem("ctx");
+		localStorage.removeItem("wlan");
+		localStorage.removeItem("thisIp");
+	};
+
+	function purgeStorage() {
+		localStorage.clear();
+	};
+
 	function dynamicDesc(c:boolean, l:boolean):string {
 		let desc = ""
 		if (c == true && l == false) {
@@ -97,6 +111,8 @@ function Content() {
 		addEventListener('connectionErrPrompt',connError);
 		addEventListener('wlan0ConnError',wlanError);
 		addEventListener('Vlan_IP',displayIP);
+		addEventListener('clearStorage',clearStorage);
+		addEventListener('purgeStorage',purgeStorage);
 	return() => {
 		removeEventListener('turnToggleOff',disableToggle);
 		removeEventListener('turnToggleOn',enableToggle);
@@ -104,6 +120,8 @@ function Content() {
 		removeEventListener('connectionErrPrompt',connError);
 		removeEventListener('wlan0ConnError',wlanError);
 		removeEventListener('Vlan_IP',displayIP);
+		removeEventListener('clearStorage',clearStorage);
+		removeEventListener('purgeStorage',purgeStorage);
 		}
 	},[]);
 
@@ -113,6 +131,10 @@ function Content() {
 	}
 	useEffect(() => {
 			initState();
+			addEventListener('purgeStorage',purgeStorage);
+		return() => {
+			removeEventListener('purgeStorage',purgeStorage);
+		}
 	}, []);
 	return (
 		<PanelSection>

@@ -232,6 +232,7 @@ class Plugin:
 						await decky.emit("turnToggleOn")
 						omega = f"podman exec -i xivomega /home/omega_alpha.sh"
 						xivomega = await asyncio.create_subprocess_exec(*shlex.split(omega), stdin=PIPE, stdout=PIPE, stderr=STDOUT)
+						await decky.emit("clearStorage")
 						while True:
 							try:
 								if Plugin._enabled:
@@ -255,6 +256,7 @@ class Plugin:
 				decky.logger.info("Failure on process")
 				decky.logger.info(traceback.format_exc())
 				await decky.emit("turnToggleOn")
+				await decky.emit("clearStorage")
 				pass
 			await asyncio.sleep(0.5)
 
@@ -266,6 +268,10 @@ class Plugin:
 	# Asyncio-compatible long-running code, executed in a task when the plugin is loaded
 	async def _main(self):
 		# BIG FYI - Decky uses /usr/bin/podman!!! have this in mind in case something needs fixing or anything
+		startflag = 1
+		if startflag == 1:
+			await decky.emit('purgeStorage')
+			startflag = 0
 		omegaWorker.WorkerClass.SelfCleaningProtocol()
 		# check if podman storage is patched
 		decky.logger.info(xivomega_storage)
