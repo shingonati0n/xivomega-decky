@@ -27,7 +27,19 @@ import { AiFillGithub, AiFillHeart } from "react-icons/ai";
 import logo from "../assets/XIVOmegaLogo.png";
 import qrc from "../assets/qr_code.png";
 
-const onKill = async() => {call('stop_status');localStorage.clear();}
+const onKill = async() => {call('stop_status')}
+
+const xivOmegaSessionClear = async() => {
+		// Clear any saved state and cached data from previous sessions
+		localStorage.removeItem("checkd");
+		localStorage.removeItem("loading");
+		localStorage.removeItem("storagep");
+		localStorage.removeItem("ctx");
+		localStorage.removeItem("wlan");
+		localStorage.removeItem("thisIp");
+  };
+//Run before anything on startup
+xivOmegaSessionClear();
 
 function Content() {
 	const textStyle = {fontSize: "11px"};
@@ -74,10 +86,6 @@ function Content() {
 		localStorage.removeItem("thisIp");
 	};
 
-	function purgeStorage() {
-		localStorage.clear();
-	};
-
 	function dynamicDesc(c:boolean, l:boolean):string {
 		let desc = ""
 		if (c == true && l == false) {
@@ -103,7 +111,6 @@ function Content() {
 		setCheckd(e);
 		setLoading(true);
 	}
-	
 	useEffect(()=>{
 		addEventListener('turnToggleOff',disableToggle);
 		addEventListener('turnToggleOn',enableToggle);
@@ -112,7 +119,6 @@ function Content() {
 		addEventListener('wlan0ConnError',wlanError);
 		addEventListener('Vlan_IP',displayIP);
 		addEventListener('clearStorage',clearStorage);
-		addEventListener('purgeStorage',purgeStorage);
 	return() => {
 		removeEventListener('turnToggleOff',disableToggle);
 		removeEventListener('turnToggleOn',enableToggle);
@@ -121,20 +127,16 @@ function Content() {
 		removeEventListener('wlan0ConnError',wlanError);
 		removeEventListener('Vlan_IP',displayIP);
 		removeEventListener('clearStorage',clearStorage);
-		removeEventListener('purgeStorage',purgeStorage);
 		}
 	},[]);
 
 	const initState = async () => {
 		const getIsEnabledResponse = await call<[],boolean>("curr_status");
 		setCheckd(getIsEnabledResponse);
+		clearStorage();
 	}
 	useEffect(() => {
 			initState();
-			addEventListener('purgeStorage',purgeStorage);
-		return() => {
-			removeEventListener('purgeStorage',purgeStorage);
-		}
 	}, []);
 	return (
 		<PanelSection>
@@ -197,6 +199,7 @@ export default definePlugin(() => {
 		icon: <GiCagedBall />,
 		onDismount() {
 			onKill();
+			xivOmegaSessionClear();
 		},
 	};
 });

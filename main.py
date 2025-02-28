@@ -268,10 +268,7 @@ class Plugin:
 	# Asyncio-compatible long-running code, executed in a task when the plugin is loaded
 	async def _main(self):
 		# BIG FYI - Decky uses /usr/bin/podman!!! have this in mind in case something needs fixing or anything
-		startflag = 1
-		if startflag == 1:
-			await decky.emit('purgeStorage')
-			startflag = 0
+		# await decky.emit('purgeStorage')
 		omegaWorker.WorkerClass.SelfCleaningProtocol()
 		# check if podman storage is patched
 		decky.logger.info(xivomega_storage)
@@ -318,6 +315,7 @@ class Plugin:
 	# completely removed
 	async def _unload(self):
 		Plugin.stop_status(self)
+		# await decky.emit('purgeStorage')
 		omegaWorker.WorkerClass.SelfDestructProtocol(roadsto14)
 		decky.logger.info("Goodnight World!")
 		pass
