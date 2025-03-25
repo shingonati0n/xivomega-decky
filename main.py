@@ -16,11 +16,17 @@ import pdb
 import traceback
 import random
 from random import sample
+#logger methods based on MagicPods
+import logging
+from logging.handlers import RotatingFileHandler
+import configparser
+from configparser import ConfigParser
 #append py_modules to PYTHONPATH
 sys.path.append(str(Path(__file__).parent / "py_modules"))
 
 from lib import omegaWorker
 from scapy.all import ARP, Ether, srp
+
 
 thisusr = decky.USER
 thisusrhome = decky.DECKY_USER_HOME
@@ -67,6 +73,32 @@ legacyroads = [
 
 
 roadsto14 = legacyroads
+
+#custom logger - copying implementation form MagicPods - to easily check log
+
+# Create a logger
+lvl = logging.DEBUG
+_logger = logging.getLogger("magicpods")
+_logger.setLevel(lvl)
+
+# Create a file handler and set the level to DEBUG
+file_handler = RotatingFileHandler(os.path.join(decky.DECKY_PLUGIN_LOG_DIR,"xivomegalog.txt"), mode='a', maxBytes=5*1024*1024, backupCount=0)
+file_handler.setLevel(lvl)
+
+# Create a console handler and set the level to INFO
+console_handler = logging.StreamHandler()
+console_handler.setLevel(lvl)
+
+# Create a formatter and set it to the handlers
+formatter = logging.Formatter('%(asctime)s  %(levelname)-5s  %(tag)s    %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+file_handler.setFormatter(formatter)
+console_handler.setFormatter(formatter)
+
+# Add the handlers to the logger
+_logger.addHandler(file_handler)
+_logger.addHandler(console_handler)
+
+logger = logging.LoggerAdapter(_logger, {"tag": "py"})
 
 #fix etc/containers/storage.conf to avoid podman no space left issue
 
@@ -119,39 +151,39 @@ def get_vip_lip(ipaddr,subnaddr):
 				ips.append(device[k])
 	devices_with_names = get_device_names(devices_list)
 	
-	decky.logger.info("IPs in use:")
+	logger.info("IPs in use:")
 	for uip in ips:
-		decky.logger.info(uip)
+		logger.info(uip)
 	allip = [str(ip) for ip in ipaddress.IPv4Network(subnaddr)]
 	useable_ip = allip[3:-2]
 	# Removing elements present in other list
 	# using list comprehension
 	res = [i for i in useable_ip if i not in ips]
-	decky.logger.info("Chosen IPs:")
+	logger.info("Chosen IPs:")
 	vip, lip = sample(res,2)
-	decky.logger.info(f"VlanIP: {vip}")
-	decky.logger.info(f"Last IP: {lip}")
+	logger.info(f"VlanIP: {vip}")
+	logger.info(f"Last IP: {lip}")
 	return vip, lip
 
 #end of scapy methods
 
 def establishConnection(self,rt14)->int:
 	ctx = 1
-	decky.logger.info("Establishing network connection...")
+	logger.info("Establishing network connection...")
 	while(5 > ctx > 0):
 		try:
 			dice = Popen(shlex.split("podman exec -i xivomega ping 204.2.29.7 -c 5"),stdin=PIPE,stdout=PIPE,stderr=STDOUT)
 			dice.wait()
 			if dice.returncode == 0:
-				decky.logger.info("Network Established")
+				logger.info("Network Established")
 				ctx = 0
 			else:
-				decky.logger.info("Retrying Connection..")
+				logger.info("Retrying Connection..")
 				ctx = ctx + 1
 				omegaWorker.WorkerClass().ReconnectProtocol()
 				omegaWorker.WorkerClass().SetRoutes(rt14)
 		except subprocess.CalledProcessError as e:
-			decky.logger.info("Retrying Connection...")
+			logger.info("Retrying Connection...")
 			ctx = ctx + 1
 			omegaWorker.WorkerClass().ReconnectProtocol()
 			omegaWorker.WorkerClass().SetRoutes(rt14)
@@ -161,7 +193,7 @@ def establishConnection(self,rt14)->int:
 def networkSetup(self):
 	netwElems = {}
 	this_dev = omegaWorker.WorkerClass().get_current_device()
-	decky.logger.info(f"Device under use: {this_dev}")
+	logger.info(f"Device under use: {this_dev}")
 	ipv4 = os.popen('ip addr show ' + this_dev).read().split("inet ")[1].split(" brd")[0] 
 	ipv4n, netb = ipv4.split('/')
 	subn = ipaddress.ip_network(cidr_to_netmask(ipv4)[0]+'/'+cidr_to_netmask(ipv4)[1], strict=False)
@@ -191,22 +223,81 @@ def networkSetup(self):
 class Plugin:
 
 	_enabled = False
+
+	#read log
+	async def read_logs(self):
+		output = ""
+		with open(os.path.join(decky.DECKY_PLUGIN_LOG_DIR, "xivomegalog.txt")) as file:
+			for line in (file.readlines() [-150:]):
+				output += line
+		return output
 	
 	# Current Status
 	async def curr_status(self)-> bool:
-		decky.logger.info(Plugin._enabled)
+		logger.info(Plugin._enabled)
 		return Plugin._enabled
 
 	#switch toggle status
 	async def toggle_status(self, check):
-		decky.logger.info(check['checkd'])
-		decky.logger.info(type(check['checkd']))
+		logger.info(check['checkd'])
+		logger.info(type(check['checkd']))
 		if Plugin._enabled == True and check['checkd'] == False:
-			decky.logger.info("Disabling XIVOmega")
+			logger.info("Disabling XIVOmega")
 			omegaWorker.WorkerClass().stopPodman()
 			omegaWorker.WorkerClass().SelfDisableProtocol()
 		await decky.emit("turnToggleOn")
 		Plugin._enabled = check['checkd']
+	
+	#get opcodes from front end
+	async def use_cust_opcodes(self, 
+		use_custom_opcodes:bool, 
+		C2S_ActionRequest:str, 
+		C2S_ActionRequestGroundTargeted:str, 
+		S2C_ActionEffect01:str, 
+		S2C_ActionEffect08:str, 
+		S2C_ActionEffect16:str, 
+		S2C_ActionEffect24:str, 
+		S2C_ActionEffect32:str, 
+		S2C_ActorCast:str, 
+		S2C_ActorControl:str,
+		S2C_ActorControlSelf:str):
+		op_parms = {
+			'use_custom_opcodes':use_custom_opcodes,
+        	'C2S_ActionRequest':C2S_ActionRequest,
+        	'C2S_ActionRequestGroundTargeted':C2S_ActionRequestGroundTargeted,
+        	'S2C_ActionEffect01':S2C_ActionEffect01,
+        	'S2C_ActionEffect08':S2C_ActionEffect08,
+        	'S2C_ActionEffect16':S2C_ActionEffect16,
+        	'S2C_ActionEffect24':S2C_ActionEffect24,
+        	'S2C_ActionEffect32':S2C_ActionEffect32,
+        	'S2C_ActorCast':S2C_ActorCast,
+        	'S2C_ActorControl':S2C_ActorControl,
+        	'S2C_ActorControlSelf':S2C_ActorControlSelf
+			}
+		logger.info(f'Custom Opcodes: ' + str(op_parms['use_custom_opcodes']))
+		new_opcode_conf = ConfigParser()
+		new_opcode_conf["Opcodes"] = {
+			"use_custom_opcodes": op_parms['use_custom_opcodes'],
+			"C2S_ActionRequest": op_parms['C2S_ActionRequest'],
+			"C2S_ActionRequestGroundTargeted": op_parms['C2S_ActionRequestGroundTargeted'],
+			"S2C_ActionEffect01": op_parms['S2C_ActionEffect01'],
+			"S2C_ActionEffect08": op_parms['S2C_ActionEffect08'],
+			"S2C_ActionEffect16": op_parms['S2C_ActionEffect16'],
+			"S2C_ActionEffect24": op_parms['S2C_ActionEffect24'],
+			"S2C_ActionEffect32": op_parms['S2C_ActionEffect32'],
+			"S2C_ActorCast": op_parms['S2C_ActorCast'],
+			"S2C_ActorControl": op_parms['S2C_ActorControl'],
+			"S2C_ActorControlSelf": op_parms['S2C_ActorControlSelf']
+		}
+		try:
+			with open(os.path.join(pluginpath,'podman_config','opcode_conf.ini'),'w') as conf:
+				new_opcode_conf.write(conf)
+				if op_parms['use_custom_opcodes']:
+					logger.info("New opcode configuration saved. To be applied on next mitigator start")
+				else:
+					logger.info("Reverting to Default Opcodes on next mitigation restart")
+		except Exception as e:
+			logger.error(traceback.format_exc())
 
 	#mitigator method
 	async def mitigate(self):
@@ -216,18 +307,21 @@ class Plugin:
 			try:
 				if Plugin._enabled:
 					await decky.emit("turnToggleOff")
-					decky.logger.info("XIVOmega is enabled")
+					logger.info("XIVOmega is enabled")
 					isRunning = omegaWorker.WorkerClass.isRunning()
 					if isRunning == False:
-						decky.logger.info("Activation signal received, starting new container and network config")
+						logger.info("Activation signal received, starting new container and network config")
 						netw = networkSetup(self)
 						omegaWorker.WorkerClass().CreateHostAdapter(netw["vip"],netw["netb"],netw["brd"])
 						omegaWorker.WorkerClass().createIpVlanC(netw["sdsubn"],netw["sdgway"])
+						#check opcode_config_file
 						omegaWorker.WorkerClass().SelfCreateProtocol(netw["lip"])
 					else: 
-						decky.logger.info("Container started - set routes and connect")
+						logger.info("Container started - set routes and connect")
 					omegaWorker.WorkerClass().SetRoutes(roadsto14)
 					ctx = establishConnection(self,roadsto14) 
+					#check if custom opcode is in use - front end stuff should be here I think
+					omegaWorker.WorkerClass().opcode_config(pluginpath)
 					if ctx == 0:
 						await decky.emit("turnToggleOn")
 						omega = f"podman exec -i xivomega /home/omega_alpha.sh"
@@ -239,7 +333,7 @@ class Plugin:
 									await decky.emit("Vlan_IP",str(netw["vip"]))
 									ln = await asyncio.wait_for(xivomega.stdout.readline(),1)
 									if ln:
-										decky.logger.info(ln.decode('utf-8').strip())
+										logger.info(ln.decode('utf-8').strip())
 										await asyncio.sleep(0.5)
 								else:
 									break
@@ -253,8 +347,8 @@ class Plugin:
 						await decky.emit("turnToggleOn")
 						pass
 			except Exception as e:
-				decky.logger.info("Failure on process")
-				decky.logger.info(traceback.format_exc())
+				logger.info("Failure on process")
+				logger.info(traceback.format_exc())
 				await decky.emit("turnToggleOn")
 				await decky.emit("clearStorage")
 				pass
@@ -263,7 +357,7 @@ class Plugin:
 	#function for onKill
 	async def stop_status(self):
 		Plugin._enabled = False
-		decky.logger.info("Killing on the way out")
+		logger.info("Killing on the way out")
 
 	# Asyncio-compatible long-running code, executed in a task when the plugin is loaded
 	async def _main(self):
@@ -271,12 +365,12 @@ class Plugin:
 		# await decky.emit('purgeStorage')
 		omegaWorker.WorkerClass.SelfCleaningProtocol()
 		# check if podman storage is patched
-		decky.logger.info(xivomega_storage)
+		logger.info(xivomega_storage)
 		confCheck = omegaWorker.WorkerClass.checkPodmanConf(pluginpath)
 		if confCheck >= 0: 
 			storageCheck = omegaWorker.WorkerClass.checkPodmanStorage()
 			if storageCheck:
-				decky.logger.info("Initiating storage.conf patching process")
+				logger.info("Initiating storage.conf patching process")
 				omegaWorker.WorkerClass().fixPodmanStorage(xivomega_storage)
 		else:
 			raise StorageConfSetupError
@@ -286,29 +380,29 @@ class Plugin:
 		await asyncio.sleep(15)
 		try:
 			netw = networkSetup(self)
-			decky.logger.info("Starting main program")
-			decky.logger.info(f"Network Interface in use: " + omegaWorker.WorkerClass().get_current_device())
-			decky.logger.info(f"Host IPVlan IP: " + str(netw["vip"]))
-			decky.logger.info(f"Podman IPVlan IP: " + str(netw["lip"]))
-			decky.logger.info(f"Gateway IP: " + str(netw["fip"]))
+			logger.info("Starting main program")
+			logger.info(f"Network Interface in use: " + omegaWorker.WorkerClass().get_current_device())
+			logger.info(f"Host IPVlan IP: " + str(netw["vip"]))
+			logger.info(f"Podman IPVlan IP: " + str(netw["lip"]))
+			logger.info(f"Gateway IP: " + str(netw["fip"]))
 			#send IPVlan host info to the UI - this will be the new Deck IP while the plugin is in use
 			await decky.emit("Vlan_IP",str(netw["vip"]))
 		except IndexError:
-			decky.logger.info("wlan0 couldn't be found connected")
+			logger.info("wlan0 couldn't be found connected")
 			await decky.emit("wlan0ConnError")
 		#main loop
 		try:
 			loop = asyncio.get_event_loop()
 			Plugin._runner_task = loop.create_task(Plugin.mitigate(self))
-			decky.logger.info("Mitigation Protocol Initiated")
+			logger.info("Mitigation Protocol Initiated")
 		except Exception:
-			decky.logger.exception("main")
+			logger.exception("main")
 			pass
 		except ConnectionFailedError:
-			decky.logger.info("Connection Failed")
+			logger.info("Connection Failed")
 			await decky.emit("connectionErrPrompt")
 		except StorageConfSetupError:
-			decky.logger.info("Storage.conf file could not be copied.")
+			logger.info("Storage.conf file could not be copied.")
 			await decky.emit("storageConfErrPromt")
 
 	# Function called first during the unload process, utilize this to handle your plugin being stopped, but not
@@ -317,7 +411,7 @@ class Plugin:
 		Plugin.stop_status(self)
 		# await decky.emit('purgeStorage')
 		omegaWorker.WorkerClass.SelfDestructProtocol(roadsto14)
-		decky.logger.info("Goodnight World!")
+		logger.info("Goodnight World!")
 		pass
 
 	# Function called after `_unload` during uninstall, utilize this to clean up processes and other remnants of your
@@ -325,12 +419,12 @@ class Plugin:
 	async def _uninstall(self):
 		omegaWorker.WorkerClass.SelfDestructProtocol(roadsto14)
 		omegaWorker.WorkerClass.restorePodmanStorage(xivomega_storage,pluginpath)
-		decky.logger.info("Goodbye World!")
+		logger.info("Goodbye World!")
 		pass
 
 	# # Migrations that should be performed before entering `_main()`.
 	# async def _migration(self):
-	# 	decky.logger.info("Migrating")
+	# 	logger.info("Migrating")
 	# 	# Here's a migration example for logs:
 	# 	# - `~/.config/decky-template/template.log` will be migrated to `decky.DECKY_PLUGIN_LOG_DIR/template.log`
 	# 	decky.migrate_logs(os.path.join(decky.DECKY_USER_HOME,

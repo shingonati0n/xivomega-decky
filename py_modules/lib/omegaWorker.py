@@ -14,9 +14,30 @@ from subprocess import Popen, PIPE, CalledProcessError, STDOUT
 import gi
 gi.require_version("NM", "1.0")
 from gi.repository import GLib, NM
+import configparser
 
+#global version var
+quayver = '0.3.0'
 
 class WorkerClass:
+#check opcode_conf file - if set to true, then copy to container before running
+	@staticmethod
+	def opcode_config(pluginpath):
+		opc_cfg = configparser.ConfigParser()
+		opc_cfg.read(pluginpath + '/podman_config/opcode_conf.ini')
+
+		use_opcodes = opc_cfg.getboolean('Opcodes','use_custom_opcodes')
+
+		if use_opcodes:
+			decky.logger.info("Custom Opcode Configuration Detected")
+			decky.logger.info("Using Opcodes from opcode_conf.ini")
+			try:
+				xivo_opcode = subprocess.run(shlex.split(f"podman cp {pluginpath}/podman_config/opcode_conf.ini xivomega:/home/config.ini"),check=True,capture_output=True)
+				if xivo_opcode.returncode == 0:
+					decky.logger.info("Opcode Configuration Load: Complete")
+			except subprocess.CalledProcessError as e:
+				decky.logger.info(e.stderr.decode())
+
 	#get current network device name by priority, this solves for when cable is connected
 	@staticmethod
 	def get_current_device():
@@ -48,7 +69,7 @@ class WorkerClass:
 		  --sysctl net.ipv4.conf.all.route_localnet=1 \
 		  --net=podman \
 		  --cap-add=NET_RAW,NET_ADMIN \
-		  -i quay.io/shingonati0n/xivomega:latest /bin/sh"""
+		  -i quay.io/shingonati0n/xivomega:{quayver} /bin/sh"""
 		try:
 			xivomega = subprocess.run(shlex.split(omegapod),check=True,capture_output=True)
 			if xivomega.returncode == 0:

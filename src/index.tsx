@@ -8,7 +8,8 @@ import {
 	Navigation,
 	showContextMenu,
 	Menu,
-	MenuItem
+	MenuItem,
+	Router
 } from "@decky/ui";
 
 import {
@@ -16,16 +17,20 @@ import {
 	removeEventListener,
 	call,
 	definePlugin,
+	routerHook
 } from "@decky/api"
 
 import { useLocalStorage } from "./useLocalStorage";
 import { useEffect } from "react";
 import { GiCagedBall,GiOmega } from 'react-icons/gi'
-import { AiFillGithub, AiFillHeart } from "react-icons/ai";
-
+import { AiFillGithub, AiFillHeart,AiOutlineRightSquare, AiOutlineSetting } from "react-icons/ai";
+import { LogRouter } from "./pages/log";
+import { OpcodeRouter } from "./pages/opcodes";
+import { SettingsRouter } from "./pages/settings";
 
 import logo from "../assets/XIVOmegaLogo.png";
 import qrc from "../assets/qr_code.png";
+
 
 const onKill = async() => {call('stop_status')}
 
@@ -159,10 +164,25 @@ function Content() {
 			{checkd && loading && (<PanelSectionRow><div style={textStyle}>Please wait...<Spinner width="11" height="11"/></div></PanelSectionRow>)}
 			{storagep && (<PanelSectionRow><div style={textStyle}><b>ERROR: storage.conf couldn't be created in /etc/containers. Please reload plugin from Decky Menu and try again.</b></div></PanelSectionRow>)}
 			{ctx && (<PanelSectionRow><div style={textStyle}><b>ERROR: Connection to the game servers couldn't be established. Please reload plugin from Decky Menu and try again.</b></div></PanelSectionRow>)}
-			{wlan && (<PanelSectionRow><div style={textStyle}><b>ERROR: Wifi device wlan0 couldn't be found. Please reload plugin from Decky Menu and try again.</b></div></PanelSectionRow>)}
+			{wlan && (<PanelSectionRow><div style={textStyle}><b>ERROR: Network Device couldn't be found. Please reload plugin from Decky Menu and try again.</b></div></PanelSectionRow>)}
 			{!checkd && !loading && (<div></div>)}
 			{!checkd && loading && (<PanelSectionRow><div style={textStyle}>Please wait...<Spinner width="11" height="11"/></div></PanelSectionRow>)}			
 			<PanelSectionRow>
+				<ButtonItem
+          			layout="below"
+					onClick={() => {
+						Router.CloseSideMenus();
+						Router.Navigate("/xivomega-settings")
+					}}>
+					<AiOutlineSetting/> Settings
+				</ButtonItem>
+				<ButtonItem
+          			layout="below"
+					onClick={() => {
+						Navigation.Navigate("/xivomega-log");
+					}}>
+					<AiOutlineRightSquare/> View Log 
+				</ButtonItem>
 				<ButtonItem
           			layout="below"
 					onClick={() => {
@@ -192,6 +212,9 @@ function Content() {
 };
 
 export default definePlugin(() => {
+	routerHook.addRoute("/xivomega-log",() =>(<LogRouter/>));
+	routerHook.addRoute("/xivomega-opcode",() =>(<OpcodeRouter/>));
+	routerHook.addRoute("/xivomega-settings",() =>(<SettingsRouter/>));
 	return {
 		name: "XivOmega",
 		title: <div className={staticClasses.Title}>XivOmega</div>,
@@ -200,6 +223,20 @@ export default definePlugin(() => {
 		onDismount() {
 			onKill();
 			xivOmegaSessionClear();
+			localStorage.removeItem("useOpcode");
+			localStorage.removeItem("c2s_ar");
+			localStorage.removeItem("c2s_argt");
+			localStorage.removeItem("s2c_ae01");
+			localStorage.removeItem("s2c_ae08");
+			localStorage.removeItem("s2c_ae16");
+			localStorage.removeItem("s2c_ae24");
+			localStorage.removeItem("s2c_ae32");
+			localStorage.removeItem("s2c_ac");
+			localStorage.removeItem("s2c_acntl");
+			localStorage.removeItem("s2c_acntls");
+			routerHook.removeRoute("/xivomega-log");
+			routerHook.removeRoute("/xivomega-opcode");
+			routerHook.removeRoute("/xivomega-settings");
 		},
 	};
 });
