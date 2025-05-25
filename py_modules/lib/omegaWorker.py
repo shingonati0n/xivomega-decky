@@ -11,13 +11,15 @@ import shutil
 import shlex
 import io
 from subprocess import Popen, PIPE, CalledProcessError, STDOUT
-import gi
-gi.require_version("NM", "1.0")
-from gi.repository import GLib, NM
 import configparser
 
 #global version var
 quayver = '0.3.0'
+
+#deprecating gi - leaving comented code just in case
+#import gi
+#gi.require_version("NM", "1.0")
+#from gi.repository import GLib, NM
 
 class WorkerClass:
 #check opcode_conf file - if set to true, then copy to container before running
@@ -41,21 +43,40 @@ class WorkerClass:
 	#get current network device name by priority, this solves for when cable is connected
 	@staticmethod
 	def get_current_device():
-		client = NM.Client.new(None)
-		devices = client.get_devices()
+
+		#client = NM.Client.new(None)
+		#devices = client.get_devices()
 		netdevices = {}
 		curr_netd = ""
+		####
+		cmd = [
+	    "nmcli", "-t", "-f", "DEVICE,TYPE,STATE", 
+	    "device", "status"
+		]
+		result = subprocess.run(cmd, capture_output=True, text=True)
+		for line in result.stdout.splitlines():
+			iface, dev_type, state = line.split(":")
+			netdevices[iface] = f"{dev_type};{state}"
+		# Ethernet 1st, Wifi 2nd
+		for iface, details in netdevices.items():
+			dev_type, state = details.split(";")
+			if dev_type == "ethernet" and state == "connected":
+					return iface
+			elif dev_type == "wifi" and state == "connected":
+					return iface
+		
+		#### Old Code below
 
-		for device in devices:
-		    netdevices[device.get_iface()] = device.get_type_description() + ";" + device.get_state().value_nick
+		#for device in devices:
+		#    netdevices[device.get_iface()] = device.get_type_description() + ";" + device.get_state().value_nick
 
-	#priority is ethernet first, then wifi
-		for netd, netdet in netdevices.items():
-			netd_type, netd_state = netdet.split(";")
-			if netd_type in ("ethernet") and netd_state in ("activated"):
-				return netd #ethernet = enp0s*
-			elif netd_type in ("wifi") and netd_state in ("activated"):
-				return netd #wifi = wlan* or wlp*
+		#priority is ethernet first, then wifi
+		#for netd, netdet in netdevices.items():
+		#	netd_type, netd_state = netdet.split(";")
+		#	if netd_type in ("ethernet") and netd_state in ("activated"):
+		#		return netd #ethernet = enp0s*
+		#	elif netd_type in ("wifi") and netd_state in ("activated"):
+		#		return netd #wifi = wlan* or wlp*
 
 		return curr_netd #you get nothing, you lose, good day, sir!
 

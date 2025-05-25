@@ -363,6 +363,8 @@ class Plugin:
 	async def _main(self):
 		# BIG FYI - Decky uses /usr/bin/podman!!! have this in mind in case something needs fixing or anything
 		# await decky.emit('purgeStorage')
+		logger.info(f"Python Version used by Decky: {sys.version}")
+		logger.info(f"Python Route: {sys.executable}")
 		omegaWorker.WorkerClass.SelfCleaningProtocol()
 		# check if podman storage is patched
 		logger.info(xivomega_storage)
