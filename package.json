@@ -1,6 +1,6 @@
 {
   "name": "xivomega-decky",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Latency Mitigator for FFXIV",
   "type": "module",
   "scripts": {
