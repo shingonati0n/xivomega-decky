@@ -27,7 +27,6 @@ sys.path.append(str(Path(__file__).parent / "py_modules"))
 from lib import omegaWorker
 from scapy.all import ARP, Ether, srp
 
-
 thisusr = decky.USER
 thisusrhome = decky.DECKY_USER_HOME
 xivomega_storage = decky.DECKY_PLUGIN_RUNTIME_DIR
@@ -74,6 +73,11 @@ legacyroads = [
 
 roadsto14 = legacyroads
 
+#fix for subprocess issue that arose in Decky 3.1.1
+
+env = os.environ.copy()
+env["LD_LIBRARY_PATH"] = ""
+
 #custom logger - copying implementation form MagicPods - to easily check log
 
 # Create a logger
@@ -101,6 +105,9 @@ _logger.addHandler(console_handler)
 logger = logging.LoggerAdapter(_logger, {"tag": "py"})
 
 #fix etc/containers/storage.conf to avoid podman no space left issue
+
+#fix for subprocess issue in latest Decky 3.1.1 update - using fix from Alex4386 (Decky Terminal) - Thanks man!
+
 
 #get subnet mask and subnet
 def cidr_to_netmask(cidr):
@@ -172,7 +179,7 @@ def establishConnection(self,rt14)->int:
 	logger.info("Establishing network connection...")
 	while(5 > ctx > 0):
 		try:
-			dice = Popen(shlex.split("podman exec -i xivomega ping 204.2.29.7 -c 5"),stdin=PIPE,stdout=PIPE,stderr=STDOUT)
+			dice = Popen(shlex.split("podman exec -i xivomega ping 204.2.29.7 -c 5"),stdin=PIPE,stdout=PIPE,stderr=STDOUT,env=env)
 			dice.wait()
 			if dice.returncode == 0:
 				logger.info("Network Established")
@@ -194,7 +201,16 @@ def networkSetup(self):
 	netwElems = {}
 	this_dev = omegaWorker.WorkerClass().get_current_device()
 	logger.info(f"Device under use: {this_dev}")
-	ipv4 = os.popen('ip addr show ' + this_dev).read().split("inet ")[1].split(" brd")[0] 
+	process = subprocess.Popen(
+    ['ip', 'addr', 'show', this_dev],
+    stdout=subprocess.PIPE,
+    stderr=subprocess.PIPE,
+    text=True,
+	env=env
+    )
+	stdout, stderr = process.communicate()
+	#ipv4 = Popen('ip addr show ' + this_dev,env=env).read().split("inet ")[1].split(" brd")[0] 
+	ipv4 = stdout.split("inet ")[1].split(" brd")[0]
 	ipv4n, netb = ipv4.split('/')
 	subn = ipaddress.ip_network(cidr_to_netmask(ipv4)[0]+'/'+cidr_to_netmask(ipv4)[1], strict=False)
 	sdgway = '.'.join(ipv4n.split('.')[:3]) + ".1"
